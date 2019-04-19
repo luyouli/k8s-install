@@ -328,7 +328,7 @@
     tags: master,master-backup-certs
     fetch:
       src: "/etc/kubernetes/{{ item }}"
-      dest: "/data/backup/kubernetes/{{ item }}"
+      dest: "/data/backup/kubernetes/"
     with_items:
     - "pki/ca.crt"
     - "pki/ca.key"
