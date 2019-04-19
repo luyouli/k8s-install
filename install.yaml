@@ -454,7 +454,7 @@
   - name: 拷贝配置文件
     tags: dashboard
     template:
-      src: "{{ item }}"
+      src: "files/{{ item }}"
       dest: .
     with_items:
     - dashboard-ingress.yaml
