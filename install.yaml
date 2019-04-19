@@ -329,6 +329,7 @@
     fetch:
       src: "/etc/kubernetes/{{ item }}"
       dest: "/data/backup/kubernetes/"
+      flat: yes
     with_items:
     - "pki/ca.crt"
     - "pki/ca.key"
