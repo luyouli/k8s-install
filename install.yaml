@@ -226,6 +226,11 @@
     copy:
       src: "/tmp/etcd/{{ hostname }}/pki/"
       dest: /etc/kubernetes/pki
+  - name: 删除 ca.key
+    tags: etcd,etcd-delete-ca
+    file:
+      path: /etc/kubernetes/pki/etcd/ca.key
+      state: absent
   - name: 删除容器
     tags: etcd,etcd-delete-etcd
     shell: "docker rm -vf etcd"
@@ -259,13 +264,6 @@
             --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
-- hosts: etcd
-  tasks:
-  - name: 删除 ca.key
-    tags: etcd,etcd-delete-ca
-    file:
-      path: /etc/kubernetes/pki/etcd/ca.key
-      state: absent
 #初始化第一个master节点
 - hosts: master[0]
   remote_user: root
