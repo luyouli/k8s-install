@@ -162,7 +162,7 @@
     shell: "docker pull {{ ali_repo }}/kubeadm:1.13.3 && docker run --rm -v /tmp/kubeadm/:/tmp/kubeadm/ \
             {{ ali_repo }}/kubeadm:1.13.3 sh -c 'cp /kubeadm /tmp/kubeadm/' &&\ 
             mv /tmp/kubeadm/kubeadm /usr/bin/ -f || true && chmod +x /usr/bin/kubeadm"
-  - name: 删除目录 /etc/kubernetes、/tmp/etcd、/data/backup/etcd
+  - name: 删除目录 /etc/kubernetes、/tmp/etcd
     tags: etcd,etcd-dirs
     file:
       path: "{{ item }}"
@@ -170,7 +170,6 @@
     with_items:
     - /etc/kubernetes
     - /tmp/etcd
-    - /data/backup/etcd
   - name: 创建目录 /tmp/etcd/xxx
     tags: etcd,etcd-dirs
     file:
@@ -200,6 +199,11 @@
             cp -R /etc/kubernetes/pki {{ item.path }} &&\ 
             find /etc/kubernetes/pki -not -name ca.crt -not -name ca.key -type f -delete"
     with_items: "{{ etcds }}"
+  - name: 删除/etc/kubernetes
+    tags: etcd,etcd-delete-kubernetes
+    file:
+      path: /etc/kubernetes
+      state: absent
   - name: 删除/data/backup/etcd
     tags: etcd,etcd-backup
     file:
@@ -208,13 +212,8 @@
   - name: 备份证书
     tags: etcd,etcd-backup
     copy:
-      src: /etc/kubernetes/
-      dest: /data/backup/etcd/kubernetes
-  - name: 删除/etc/kubernetes
-    tags: etcd,etcd-delete-kubernetes
-    file:
-      path: /etc/kubernetes
-      state: absent
+      src: /tmp/etcd/etcd0/
+      dest: /data/backup/etcd
 - hosts: etcd
   tasks:
   - name: 删除/etc/kubernetes
@@ -227,11 +226,6 @@
     copy:
       src: "/tmp/etcd/{{ hostname }}/pki/"
       dest: /etc/kubernetes/pki
-  - name: 删除 ca.key
-    tags: etcd,etcd-delete-ca
-    file:
-      path: /etc/kubernetes/pki/etcd/ca.key
-      state: absent
   - name: 删除容器
     tags: etcd,etcd-delete-etcd
     shell: "docker rm -vf etcd"
@@ -265,7 +259,13 @@
             --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
-
+- hosts: etcd
+  tasks:
+  - name: 删除 ca.key
+    tags: etcd,etcd-delete-ca
+    file:
+      path: /etc/kubernetes/pki/etcd/ca.key
+      state: absent
 #初始化第一个master节点
 - hosts: master[0]
   remote_user: root
