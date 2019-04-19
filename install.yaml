@@ -337,7 +337,6 @@
     - "pki/front-proxy-ca.crt"
     - "pki/front-proxy-ca.key"
     - "pki/etcd/ca.crt"
-    - "pki/etcd/ca.key"
     - "admin.conf"
   - name: 等待master[0]启动，1分钟
     tags: master,master-sleep
@@ -401,7 +400,6 @@
     - "pki/front-proxy-ca.crt"
     - "pki/front-proxy-ca.key"
     - "pki/etcd/ca.crt"
-    - "pki/etcd/ca.key"
     - "admin.conf"
   - name: master加入集群
     tags: masters,masters-join
