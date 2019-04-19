@@ -1,4 +1,4 @@
-#准备，安装：必要软件、docker、k8s，开始 ->
+#准备，安装：必要软件、docker、k8s
 - hosts: all
   remote_user: root
   tasks:
@@ -81,10 +81,8 @@
     shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64 &&\ 
            docker tag {{ ali_repo }}/flannel:v0.10.0-amd64 quay.io/coreos/flannel:v0.10.0-amd64 &&\ 
            docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
-# <- 准备，安装：必要软件、docker、k8s，结束
 
-
-#安装三个etcd，开始 ->
+#安装三个etcd
 - hosts: ctrl
   remote_user: root
   vars:
@@ -97,19 +95,23 @@
     shell: "docker pull {{ ali_repo }}/kubeadm:1.13.3 && docker run --rm -v /tmp/kubeadm/:/tmp/kubeadm/ \
             {{ ali_repo }}/kubeadm:1.13.3 sh -c 'cp /kubeadm /tmp/kubeadm/' &&\ 
             mv /tmp/kubeadm/kubeadm /usr/bin/ -f || true && chmod +x /usr/bin/kubeadm"
-  - name: 删除/etc/kubernetes
+  - name: 删除目录 /etc/kubernetes、/tmp/etcd、/data/backup/etcd
     file:
-      path: /etc/kubernetes
+      path: "{{ item }}"
       state: absent
-  - name: 删除目录 /tmp/etcd
-    file:
-      path: /tmp/etcd
-      state: absent
+    with_items:
+    - /etc/kubernetes
+    - /tmp/etcd
+    - /data/backup/etcd
   - name: 创建目录 /tmp/etcd/xxx
     file:
       path: "{{ item.path }}"
       state: directory
     with_items: "{{ etcds }}"
+  - name: 创建k8s的config配置文件目录 /root/.kube
+    file:
+      path: /root/.kube
+      state: directory
   - name: 生成配置文件
     template:
       src: files/etcd.j2
@@ -129,7 +131,6 @@
     file:
       path: /etc/kubernetes
       state: absent
-
 - hosts: etcd
   tasks:
   - name: 删除/etc/kubernetes
@@ -174,19 +175,14 @@
             --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
-- hosts: master[0]
+- hosts: etcd[0]
   tasks:
-  - name: 拷贝证书文件
-    copy:
-      src: "/tmp/etcd/etcd0/{{ item }}"
-      dest: "/etc/kubernetes/{{ item }}"
-    with_items:
-    - pki/etcd/ca.crt
-    - pki/apiserver-etcd-client.crt
-    - pki/apiserver-etcd-client.key
-# <- 安装三个etcd，结束
-
-#初始化第一个master节点，开始 ->
+  - name: 从etcd[0]拷贝证书
+    fetch:
+      src: /etc/kubernetes/
+      dest: /data/backup/etcd/kubernetes
+      Flat: Yes
+#初始化第一个master节点
 - hosts: master[0]
   remote_user: root
   tasks:
@@ -206,6 +202,18 @@
     template:
       src: files/kubeadm-config.j2
       dest: ./kubeadm-config.yaml
+  - name: 创建etcd证书目录
+    file:
+      path: /etc/kubernetes/pki/etcd
+      state: directory
+  - name: 拷贝etcd证书
+    copy:
+      src: "/data/backup/etcd/kubernetes/{{ item }}"
+      dest: "/etc/kubernetes/{{ item }}"
+    with_items:
+    - pki/etcd/ca.crt
+    - pki/apiserver-etcd-client.crt
+    - pki/apiserver-etcd-client.key
   - name: 初始化第一个master
     shell: kubeadm init --config=kubeadm-config.yaml
   - name: 配置kubectl的执行环境
@@ -223,4 +231,65 @@
       src: /etc/kubernetes/admin.conf
       dest: /root/.kube/
       Flat: Yes
-# <- 初始化第一个master节点，结束
+  - name: 从master[0]拷贝证书
+    fetch:
+      src: /etc/kubernetes/
+      dest: /data/backup/k8s/kubernetes
+      Flat: Yes
+  - name: 等待master[0]启动，1分钟
+    shell: sleep 60
+
+#获得加入集群的token
+- hosts: master[0]
+  remote_user: root
+  tasks:
+  - name: 删除所有token
+    shell: for token in $(kubeadm token list | tail -n +2 | awk '{print $1}') ; do kubeadm token delete $token; done
+  - name: 创建token
+    shell: kubeadm token create
+  - name: 获得token，赋给master-token变量
+    shell: "kubeadm token list | tail -n +2 | head -n 1 | awk '{print $1}'"
+    register: master_token
+  - name: 获得加入集群的discovery-token-ca-cert-hash并赋值给discovery-token-ca-cert-hash变量
+    shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | \
+            openssl dgst -sha256 -hex | sed 's/^.* //'"
+    register: discovery_token
+
+#其他master加入集群
+- hosts: master[1],master[2]
+  remote_user: root
+  tasks:
+  - name: 设置master_token变量
+    set_fact: master_token="{{ hostvars[groups.master[0]]['master_token'] }}"
+  - name: 设置discovery_token变量
+    set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
+  - name: 创建flannel配置文件目录
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
+  - name: 创建证书文件目录
+    file:
+      path: /etc/kubernetes/pki/etcd/
+      state: directory
+  - name: 拷贝证书文件
+    copy:
+      src: "/data/backup/kubernetes/{{ item }}"
+      dest: "/etc/kubernetes/{{ item }}"
+    with_items:
+    - "pki/ca.crt"
+    - "pki/ca.key"
+    - "pki/sa.key"
+    - "pki/sa.pub"
+    - "pki/front-proxy-ca.crt"
+    - "pki/front-proxy-ca.key"
+    - "pki/etcd/ca.crt"
+    - "pki/etcd/ca.key"
+    - "admin.conf"
+  - name: master加入集群
+    shell: "kubeadm join {{ groups.master[0] }}:6443 \
+            --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }} \
+            --experimental-control-plane"
