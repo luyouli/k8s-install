@@ -334,6 +334,8 @@
     - "pki/sa.pub"
     - "pki/front-proxy-ca.crt"
     - "pki/front-proxy-ca.key"
+    - "pki/apiserver-etcd-client.key"
+    - "pki/apiserver-etcd-client.crt"
     - "pki/etcd/ca.crt"
     - "admin.conf"
 
@@ -394,6 +396,8 @@
     - "pki/sa.pub"
     - "pki/front-proxy-ca.crt"
     - "pki/front-proxy-ca.key"
+    - "pki/apiserver-etcd-client.key"
+    - "pki/apiserver-etcd-client.crt"
     - "pki/etcd/ca.crt"
     - "admin.conf"
   - name: master加入集群
