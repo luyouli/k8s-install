@@ -1,0 +1,17 @@
+apiVersion: kubeadm.k8s.io/v1beta1
+kubernetesVersion: v1.13.3
+kind: ClusterConfiguration
+etcd:
+  local:
+    serverCertSANs:
+    - "{{ item.host }}"
+    peerCertSANs:
+    - "{{ item.host }}"
+    extraArgs:
+      initial-cluster: "{{ hostvars[groups.etcd[0]]['hostname'] }}=https://{{ groups.etcd[0] }}:2380,{{ hostvars[groups.etcd[1]]['hostname'] }}=https://{{ groups.etcd[1] }}:2380,{{ hostvars[groups.etcd[2]]['hostname'] }}=https://{{ groups.etcd[2] }}:2380"
+      initial-cluster-state: new
+      name: "{{ item.name }}"
+      listen-peer-urls: "https://0.0.0.0:2380"
+      listen-client-urls: "https://0.0.0.0:2379"
+      advertise-client-urls: "https://{{ item.host }}:2379"
+      initial-advertise-peer-urls: "https://{{ item.host }}:2380"
