@@ -507,3 +507,16 @@
   - name: 修改
     tags: helm
     shell: kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+    
+#安装elk
+- hosts: master[0]
+  remote_user: root
+  tasks:
+  - name: 拷贝elk配置文件
+    tags: elk
+    copy:
+      src: files/elk-all.yaml
+      dest: .
+  - name: 安装elk
+    tags: elk
+    shell: kubectl apply -f elk-all.yaml
