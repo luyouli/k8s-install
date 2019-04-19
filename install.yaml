@@ -474,3 +474,29 @@
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
+
+#安装helm tiller
+- hosts: master[0]
+  remote_user: root
+  tasks:
+  - name: 判断helm tgz是否存在
+    shell: ls -l helm-v2.13.0-rc.2-linux-amd64.tar.gz || echo 0
+    register: check_helm_has
+  - name: 如果不存在下载
+    shell: wget https://storage.googleapis.com/kubernetes-helm/helm-v2.13.0-rc.2-linux-amd64.tar.gz
+    when: check_helm_has.stdout == "0"
+  - name: 解压压缩包
+    shell: "rm -rf linux-amd64 && rm -rf /root/.helm &&\
+      tar -zxf helm-v2.13.0-rc.2-linux-amd64.tar.gz &&\
+      chmod +x -R linux-amd64 &&\
+      mv linux-amd64/helm linux-amd64/tiller -f /usr/bin/"
+  - name: 初始化
+    shell: helm init --upgrade -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.13.0-rc.2 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
+  - name: 拷贝tiller-rbac.yaml配置文件
+    template:
+      src: files/tiller-rbac.j2
+      dest: ./tiller-rbac.yaml
+  - name: 权限
+    shell: kubectl apply -f tiller-rbac.yaml && sleep 4
+  - name: 修改
+    shell: kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
