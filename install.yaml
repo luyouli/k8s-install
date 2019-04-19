@@ -414,10 +414,12 @@
   remote_user: root
   tasks:
   - name: 拷贝配置文件
+    tags: ingress
     template:
       src: files/ingress-0.21.0.j2
       dest: ./ingress-0.21.0.yaml
   - name: 执行安装ingress
+    tags: ingress
     shell: kubectl apply -f ingress-0.21.0.yaml
 
 #安装dashboard
@@ -425,6 +427,7 @@
   remote_user: root
   tasks:
   - name: 拷贝配置文件
+    tags: dashboard
     template:
       src: "{{ item }}"
       dest: .
@@ -433,12 +436,16 @@
     - dashboard-rbac.yaml
     - dashboard-deploy-1.10.1.yaml
   - name: 执行安装kubernetes-dashboard.yaml
+    tags: dashboard
     shell: kubectl apply -f dashboard-deploy-1.10.1.yaml
   - name: 执行安装rbac
+    tags: dashboard
     shell: kubectl apply -f dashboard-rbac.yaml
   - name: 安装dashboard的ingress证书
+    tags: dashboard
     shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
             openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt -subj '/CN=dashboard.test.com' &&\ 
             kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./tls.key --cert ./tls.crt"
   - name: 执行安装dashboard-ingress.yaml
+    tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
