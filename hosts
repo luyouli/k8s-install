@@ -1,0 +1,43 @@
+
+[ctrl]
+10.0.0.1 hostname=ctrl
+
+#etcd节点列表，hostname自定义主机名
+[etcd]
+10.0.0.1 hostname=etcd0
+10.0.0.2 hostname=etcd1
+10.0.0.3 hostname=etcd2
+
+#master节点列表，hostname自定义主机名
+[master]
+10.0.0.45 hostname=master0
+10.0.0.51 hostname=master1
+10.0.0.55 hostname=master2
+
+#node节点列表，hostname自定义主机名
+[node]
+10.0.0.22 hostname=node0
+10.0.0.52 hostname=node1
+
+#系统变量（脚本中可直接引用，带*的需要修改）
+[all:vars]
+# * 多个master负载均衡的域名，注意如果需要外网访问要写真实的外网域名
+api_server_doman="apiserver.com"
+
+# * 多个master负载均衡的内网IP地址
+api_server_ip="192.168.0.24"
+
+# * web控制台的域名，注意如果需要外网访问要写真实的外网域名
+dashboard_doman="dashboard.apiserver.com"
+
+# * 存储地址（nfs）
+nfs_server_host=10.0.0.55
+
+#阿里云镜像仓库前缀（阿里云官方）
+google_repo="registry.cn-hangzhou.aliyuncs.com/google_containers"
+
+#阿里云镜像仓库前缀（私有，官方上没有的镜像会推到这里）
+ali_repo="registry.cn-beijing.aliyuncs.com/common-registry"
+
+#存储挂载的本地路径
+nfs_server_path=/k8s
