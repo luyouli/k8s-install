@@ -16,9 +16,9 @@ controlPlaneEndpoint: "{{ api_server_doman }}:6443"
 etcd:
   external:
     endpoints:
-	{% for etcdipaddr in groups.etcd %}
+{% for etcdipaddr in groups.etcd %}
     - "https://{{ etcdipaddr }}:2379"
-	{% endfor %}    
+{% endfor %}    
     caFile: /etc/kubernetes/pki/etcd/ca.crt
     certFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
     keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key
