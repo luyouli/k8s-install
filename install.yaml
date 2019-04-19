@@ -78,6 +78,7 @@
     - {"name":"net.bridge.bridge-nf-call-ip6tables","value":1}
     - {"name":"vm.swappiness","value":0}
   #- name: 更新系统
+  #  tags: prepare,prepare-update
   #  yum: name=* state=latest update_cache=yes
   - name: 安装必要软件
     tags: prepare,prepare-soft
@@ -199,6 +200,16 @@
             cp -R /etc/kubernetes/pki {{ item.path }} &&\ 
             find /etc/kubernetes/pki -not -name ca.crt -not -name ca.key -type f -delete"
     with_items: "{{ etcds }}"
+  - name: 删除/data/backup/etcd
+    tags: etcd,etcd-backup
+    file:
+      path: /data/backup/etcd
+      state: absent
+  - name: 备份证书
+    tags: etcd,etcd-backup
+    copy:
+      src: /etc/kubernetes/
+      dest: /data/backup/etcd/kubernetes
   - name: 删除/etc/kubernetes
     tags: etcd,etcd-delete-kubernetes
     file:
@@ -254,14 +265,7 @@
             --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
-- hosts: etcd[0]
-  tasks:
-  - name: 从etcd[0]拷贝证书
-    tags: etcd,etcd-backup
-    fetch:
-      src: /etc/kubernetes/
-      dest: /data/backup/etcd/kubernetes
-      Flat: Yes
+
 #初始化第一个master节点
 - hosts: master[0]
   remote_user: root
