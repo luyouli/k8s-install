@@ -318,9 +318,6 @@
   - name: 安装flannel网络
     tags: master,master-create-flannel
     shell: kubectl apply -f kube-flannel.yml
-  - name: 等待master[0]启动，1分钟
-    tags: master,master-sleep
-    shell: sleep 60
   - name: 从master[0]拷贝k8s的config
     tags: master,master-ctrl-config
     fetch: src=/etc/kubernetes/admin.conf dest=/root/.kube/config flat=yes
@@ -338,6 +335,9 @@
     - "pki/apiserver-etcd-client.crt"
     - "pki/etcd/ca.crt"
     - "admin.conf"
+  - name: 等待master[0]启动，1分钟
+    tags: master,master-sleep
+    shell: sleep 60
 
 #获得加入集群的token
 - hosts: master[0]
