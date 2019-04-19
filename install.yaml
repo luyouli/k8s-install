@@ -324,12 +324,6 @@
       src: /etc/kubernetes/admin.conf
       dest: /root/.kube/config
       Flat: Yes
-  - name: 从master[0]拷贝证书
-    tags: master,master-backup-certs
-    fetch:
-      src: /etc/kubernetes/
-      dest: /data/backup/k8s
-      Flat: Yes
   - name: 等待master[0]启动，1分钟
     tags: master,master-sleep
     shell: sleep 60
