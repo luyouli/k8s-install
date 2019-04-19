@@ -409,6 +409,31 @@
     tags: masters,masters-sleep
     shell: sleep 10
 
+#node加入集群
+- hosts: node
+  remote_user: root
+  tasks:
+  - name: 设置master_token变量
+    tags: node,node-token
+    set_fact: master_token="{{ hostvars[groups.master[0]]['master_token'] }}"
+  - name: 设置discovery_token变量
+    tags: node,node-token
+    set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
+  - name: 创建flannel配置文件目录
+    tags: node,node-flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: node,node-flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
+  - name: node加入集群
+    tags: node,node-join
+    shell: "kubeadm join {{ api_server_doman }}:6443 \
+            --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
+
 #安装ingress
 - hosts: master[0]
   remote_user: root
