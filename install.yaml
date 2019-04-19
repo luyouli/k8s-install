@@ -390,7 +390,7 @@
   - name: 拷贝证书文件
     tags: masters,masters-certs
     copy:
-      src: "/data/backup/kubernetes/{{ item }}"
+      src: "/data/backup/kubernetes/{{ groups.master[0] }}/etc/kubernetes/{{ item }}"
       dest: "/etc/kubernetes/{{ item }}"
     with_items:
     - "pki/ca.crt"
