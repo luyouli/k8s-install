@@ -405,3 +405,40 @@
     shell: "kubeadm join {{ groups.master[0] }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }} \
             --experimental-control-plane"
+  - name: 等待masters启动，10秒
+    tags: masters,masters-sleep
+    shell: sleep 10
+
+#安装ingress
+- hosts: master[0]
+  remote_user: root
+  tasks:
+  - name: 拷贝配置文件
+    template:
+      src: files/ingress-0.21.0.j2
+      dest: ./ingress-0.21.0.yaml
+  - name: 执行安装ingress
+    shell: kubectl apply -f ingress-0.21.0.yaml
+
+#安装dashboard
+- hosts: master[0]
+  remote_user: root
+  tasks:
+  - name: 拷贝配置文件
+    template:
+      src: "{{ item }}"
+      dest: .
+    with_items:
+    - dashboard-ingress.yaml
+    - dashboard-rbac.yaml
+    - dashboard-deploy-1.10.1.yaml
+  - name: 执行安装kubernetes-dashboard.yaml
+    shell: kubectl apply -f dashboard-deploy-1.10.1.yaml
+  - name: 执行安装rbac
+    shell: kubectl apply -f dashboard-rbac.yaml
+  - name: 安装dashboard的ingress证书
+    shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
+            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt -subj '/CN=dashboard.test.com' &&\ 
+            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./tls.key --cert ./tls.crt"
+  - name: 执行安装dashboard-ingress.yaml
+    shell: kubectl apply -f dashboard-ingress.yaml
