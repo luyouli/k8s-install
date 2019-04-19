@@ -3,17 +3,21 @@
   remote_user: root
   tasks:
   - name: 关闭防火墙
+    tags: prepare,prepare-firewalld
     shell: "systemctl stop firewalld.service || true &&\ 
            systemctl disable firewalld.service || true "
   - name: 禁用selinux
+    tags: prepare,prepare-selinux
     shell: "setenforce 0 || true &&\ 
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config"
     ignore_errors: yes
   - name: 加载bridge、br_netfilter模块，并设置开机启动
+    tags: prepare,prepare-modules
     shell: "modprobe bridge && modprobe br_netfilter &&\ 
             touch /etc/modules-load.d/k8s.conf && echo 'bridge' > /etc/modules-load.d/k8s.conf &&\ 
             echo 'br_netfilter' >> /etc/modules-load.d/k8s.conf"
   - name: 设置iptables转发规则
+    tags: prepare,prepare-sysctl
     sysctl:
       name: "{{ item.name }}"
       value: "{{ item.value }}"
@@ -27,6 +31,7 @@
   #- name: 更新系统
   #  yum: name=* state=latest update_cache=yes
   - name: 安装必要软件
+    tags: prepare,prepare-soft
     yum: name="{{ packages }}" state=present
     vars:
       packages:
@@ -43,26 +48,34 @@
       - device-mapper-persistent-data
       - lvm2
   - name: 同步时间
+    tags: prepare,prepare-time
     shell: rm -rf /etc/localtime && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && ntpdate -u cn.pool.ntp.org
   - name: 配置源
+    tags: prepare,prepare-kubernetes.repo
     copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
   - name: 判断是否配置过docker-ce.repo
+    tags: prepare,prepare-docker-ce.repo
     shell: ls /etc/yum.repos.d | grep docker-ce.repo || echo 0
     register: check_docker_ce_repo
   - name: 配置docker-ce.repo（如果没配置过）
+    tags: prepare,prepare-docker-ce.repo
     shell: "yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo"
     when: check_docker_ce_repo.stdout == "0"
   - name: 判断是否已安装docker
+    tags: prepare,prepare-docker
     shell: ls /usr/lib/systemd/system | grep docker.service || echo 0
     register: check_docker
   - name: 安装docker-ce-17.03.2
+    tags: prepare,prepare-docker
     shell: "yum -y install --setopt=obsoletes=0 \
       https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm \
       docker-ce-17.03.2.ce-1.el7.centos"
     when: check_docker.stdout == "0"
   - name: 启动 docker
+    tags: prepare,prepare-docker
     shell: systemctl daemon-reload;systemctl enable docker;systemctl start docker
   - name: 安装k8s
+    tags: prepare,prepare-k8s
     yum: name={{ packages }} state=present
     vars:
       packages:
@@ -71,13 +84,16 @@
       - kubeadm-1.13.3
       - kubectl-1.13.3
   - name: 启动kubelet
+    tags: prepare,prepare-k8s
     shell: systemctl daemon-reload;systemctl enable kubelet;systemctl start kubelet
   - name: 拉取k8s必要镜像
+    tags: prepare,prepare-images
     shell: "docker pull {{ google_repo }}/{{ item }} &&\ 
             docker tag {{ google_repo }}/{{ item }} k8s.gcr.io/{{ item }} &&\ 
             docker rmi -f {{ google_repo }}/{{ item }}"
     with_items: ["kube-proxy:v1.13.3","kube-apiserver:v1.13.3","kube-controller-manager:v1.13.3","kube-scheduler:v1.13.3","coredns:1.2.6","etcd:3.2.24","pause:3.1"]
   - name: 拉取flannel镜像
+    tags: prepare,prepare-images
     shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64 &&\ 
            docker tag {{ ali_repo }}/flannel:v0.10.0-amd64 quay.io/coreos/flannel:v0.10.0-amd64 &&\ 
            docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
@@ -92,10 +108,12 @@
     - {"path":"/tmp/etcd/etcd2","name":"etcd2","host":"{{ groups.etcd[2] }}"}
   tasks:
   - name: 解决证书有效期为一年的问题
+    tags: etcd,etcd-kubeadm
     shell: "docker pull {{ ali_repo }}/kubeadm:1.13.3 && docker run --rm -v /tmp/kubeadm/:/tmp/kubeadm/ \
             {{ ali_repo }}/kubeadm:1.13.3 sh -c 'cp /kubeadm /tmp/kubeadm/' &&\ 
             mv /tmp/kubeadm/kubeadm /usr/bin/ -f || true && chmod +x /usr/bin/kubeadm"
   - name: 删除目录 /etc/kubernetes、/tmp/etcd、/data/backup/etcd
+    tags: etcd,etcd-dirs
     file:
       path: "{{ item }}"
       state: absent
@@ -104,22 +122,27 @@
     - /tmp/etcd
     - /data/backup/etcd
   - name: 创建目录 /tmp/etcd/xxx
+    tags: etcd,etcd-dirs
     file:
       path: "{{ item.path }}"
       state: directory
     with_items: "{{ etcds }}"
   - name: 创建k8s的config配置文件目录 /root/.kube
+    tags: etcd,etcd-ctrl-kubeconfig
     file:
       path: /root/.kube
       state: directory
   - name: 生成配置文件
+    tags: etcd,etcd-yaml
     template:
       src: files/etcd.j2
       dest: "{{ item.path }}/etcd.yaml"
     with_items: "{{ etcds }}"
   - name: 生成ca证书
+    tags: etcd,etcd-ca
     shell: "kubeadm init phase certs etcd-ca"
   - name: 生成其他证书
+    tags: etcd,etcd-certs
     shell: "kubeadm init phase certs etcd-server --config={{ item.path }}/etcd.yaml &&\ 
             kubeadm init phase certs etcd-peer --config={{ item.path }}/etcd.yaml &&\ 
             kubeadm init phase certs etcd-healthcheck-client --config={{ item.path }}/etcd.yaml &&\ 
@@ -128,32 +151,39 @@
             find /etc/kubernetes/pki -not -name ca.crt -not -name ca.key -type f -delete"
     with_items: "{{ etcds }}"
   - name: 删除/etc/kubernetes
+    tags: etcd,etcd-delete-kubernetes
     file:
       path: /etc/kubernetes
       state: absent
 - hosts: etcd
   tasks:
   - name: 删除/etc/kubernetes
+    tags: etcd,etcd-create-kubernetes
     file:
       path: /etc/kubernetes
       state: absent
   - name: 拷贝证书文件
+    tags: etcd,etcd-copy-certs
     copy:
       src: "/tmp/etcd/{{ hostname }}/pki/"
       dest: /etc/kubernetes/pki
   - name: 删除 ca.key
+    tags: etcd,etcd-delete-ca
     file:
       path: /etc/kubernetes/pki/etcd/ca.key
       state: absent
   - name: 删除容器
+    tags: etcd,etcd-delete-etcd
     shell: "docker rm -vf etcd"
     ignore_errors: yes
   - name: 删除/var/lib/etcd
+    tags: etcd,etcd-delete-etcd
     file:
       path: /var/lib/etcd
       state: absent
     ignore_errors: yes
   - name: 启动docker容器
+    tags: etcd,etcd-run
     shell: "docker run --name etcd --restart always -d -p 2379:2379 -p 2380:2380 \
             -v /var/lib/etcd/:/var/lib/etcd/ \
             -v /etc/kubernetes/:/etc/kubernetes/ \
@@ -178,6 +208,7 @@
 - hosts: etcd[0]
   tasks:
   - name: 从etcd[0]拷贝证书
+    tags: etcd,etcd-backup
     fetch:
       src: /etc/kubernetes/
       dest: /data/backup/etcd/kubernetes
@@ -187,26 +218,22 @@
   remote_user: root
   tasks:
   - name: 解决证书有效期为一年的问题
+    tags: master,master-kubeadm
     shell: "docker pull {{ ali_repo }}/kubeadm:1.13.3 && docker run --rm -v /tmp/kubeadm/:/tmp/kubeadm/ \
             {{ ali_repo }}/kubeadm:1.13.3 sh -c 'cp /kubeadm /tmp/kubeadm/' &&\ 
             mv /tmp/kubeadm/kubeadm /usr/bin/ -f || true && chmod +x /usr/bin/kubeadm"
-  - name: 创建flannel配置文件目录
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
   - name: 拷贝kubeadm-config.yaml配置文件
+    tags: master,master-copy-config
     template:
       src: files/kubeadm-config.j2
       dest: ./kubeadm-config.yaml
   - name: 创建etcd证书目录
+    tags: master,master-copy-etcd
     file:
       path: /etc/kubernetes/pki/etcd
       state: directory
   - name: 拷贝etcd证书
+    tags: master,master-copy-etcd
     copy:
       src: "/data/backup/etcd/kubernetes/{{ item }}"
       dest: "/etc/kubernetes/{{ item }}"
@@ -215,28 +242,45 @@
     - pki/apiserver-etcd-client.crt
     - pki/apiserver-etcd-client.key
   - name: 初始化第一个master
+    tags: master,master-init
     shell: kubeadm init --config=kubeadm-config.yaml
   - name: 配置kubectl的执行环境
+    tags: master,master-env
     shell: "mkdir -p /root/.kube &&\ 
            rm -rf /root/.kube/config &&\ 
            cp /etc/kubernetes/admin.conf /root/.kube/config"
+  - name: 创建flannel配置文件目录
+    tags: master,master-create-flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: master,master-create-flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
   - name: 拷贝kube-flannel.yml文件
+    tags: master,master-create-flannel
     copy:
       src: files/kube-flannel.yml
       dest: .
   - name: 安装flannel网络
+    tags: master,master-create-flannel
     shell: kubectl apply -f kube-flannel.yml
   - name: 从master[0]拷贝k8s的config
+    tags: master,master-ctrl-config
     fetch:
       src: /etc/kubernetes/admin.conf
       dest: /root/.kube/
       Flat: Yes
   - name: 从master[0]拷贝证书
+    tags: master,master-backup-certs
     fetch:
       src: /etc/kubernetes/
       dest: /data/backup/k8s/kubernetes
       Flat: Yes
   - name: 等待master[0]启动，1分钟
+    tags: master,master-sleep
     shell: sleep 60
 
 #获得加入集群的token
@@ -244,13 +288,17 @@
   remote_user: root
   tasks:
   - name: 删除所有token
+    tags: token
     shell: for token in $(kubeadm token list | tail -n +2 | awk '{print $1}') ; do kubeadm token delete $token; done
   - name: 创建token
+    tags: token
     shell: kubeadm token create
   - name: 获得token，赋给master-token变量
+    tags: token
     shell: "kubeadm token list | tail -n +2 | head -n 1 | awk '{print $1}'"
     register: master_token
   - name: 获得加入集群的discovery-token-ca-cert-hash并赋值给discovery-token-ca-cert-hash变量
+    tags: token
     shell: "openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | \
             openssl dgst -sha256 -hex | sed 's/^.* //'"
     register: discovery_token
@@ -260,22 +308,28 @@
   remote_user: root
   tasks:
   - name: 设置master_token变量
+    tags: masters,masters-token
     set_fact: master_token="{{ hostvars[groups.master[0]]['master_token'] }}"
   - name: 设置discovery_token变量
+    tags: masters,masters-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
   - name: 创建flannel配置文件目录
+    tags: masters,masters-flannel
     file:
       path: /etc/cni/net.d/
       state: directory
   - name: 拷贝flannel配置文件
+    tags: masters,masters-flannel
     copy:
       src: files/10-flannel.conflist
       dest: /etc/cni/net.d/
   - name: 创建证书文件目录
+    tags: masters,masters-certs
     file:
       path: /etc/kubernetes/pki/etcd/
       state: directory
   - name: 拷贝证书文件
+    tags: masters,masters-certs
     copy:
       src: "/data/backup/kubernetes/{{ item }}"
       dest: "/etc/kubernetes/{{ item }}"
@@ -290,6 +344,7 @@
     - "pki/etcd/ca.key"
     - "admin.conf"
   - name: master加入集群
+    tags: masters,masters-join
     shell: "kubeadm join {{ groups.master[0] }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }} \
             --experimental-control-plane"
