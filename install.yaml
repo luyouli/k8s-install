@@ -38,7 +38,7 @@
     lineinfile:
       path: /etc/hosts
       line: "{{ groups.master[0] }} {{ api_server_doman }}"
-- hosts: node
+- hosts: node,ctrl
   remote_user: root
   tasks:
   - name: 配置node的host：多个master负载均衡
