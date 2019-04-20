@@ -478,7 +478,7 @@
   - name: 安装dashboard的ingress证书
     tags: dashboard
     shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
-            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt -subj '/CN=dashboard.test.com' &&\ 
+            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt -subj '/CN=dashboard.mc.test.fzyun.io' &&\ 
             kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./tls.key --cert ./tls.crt"
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
@@ -531,3 +531,16 @@
   - name: 安装elk
     tags: elk
     shell: kubectl apply -f elk-all.yaml
+#安装微服务
+#--------------------------------------------------------------------
+- hosts: master[0]
+  remote_user: root
+  tasks:
+  - name: 拷贝微服务部署文件
+    tags: service-governance
+    copy:
+      src: files/service-governance.yaml
+      dest: .
+  - name: 安装微服务
+    tags: service-governance
+    shell: kubectl apply -f service-governance.yaml
