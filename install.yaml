@@ -478,7 +478,7 @@
   - name: 安装dashboard的ingress证书
     tags: dashboard
     shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
-            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt -subj '/CN={{ dashboard_doman }}' &&\ 
+            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./{{ dashboard_doman }}.key -out ./{{ dashboard_doman }}.crt -subj '/CN={{ dashboard_doman }}' &&\ 
             kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./{{ dashboard_doman }}.key --cert ./{{ dashboard_doman }}.crt"
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
