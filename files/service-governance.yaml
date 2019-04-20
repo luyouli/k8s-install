@@ -1,0 +1,196 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: registry-config
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  registry.conf: |-
+    upstream registry {
+      server registry1;
+      server registry2;
+      server registry3;
+    }
+    server {
+        listen          80;
+        server_name     localhost;
+        location / {
+            proxy_pass  http://registry;
+        }
+    }
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: registry0
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: registry0
+    spec:
+      containers:
+      - name: registry0
+        image: hc68/support-registry-server:1.0.0
+        command:
+        - java
+        - -Duser.timezone=Asia/Shanghai
+        - -jar
+        - /support-registry-server-1.0.0-SNAPSHOT.jar
+        - --server.port=80
+        - --eureka.client.register-with-eureka=false
+        - --eureka.client.fetch-registry=false
+        - --eureka.client.serviceUrl.defaultZone=http://registry1/eureka/,http://registry2/eureka/
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: registry1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: registry1
+    spec:
+      containers:
+      - name: registry1
+        image: hc68/support-registry-server:1.0.0
+        command:
+        - java
+        - -Duser.timezone=Asia/Shanghai
+        - -jar
+        - /support-registry-server-1.0.0-SNAPSHOT.jar
+        - --server.port=80
+        - --eureka.client.register-with-eureka=false
+        - --eureka.client.fetch-registry=false
+        - --eureka.client.serviceUrl.defaultZone=http://registry0/eureka/,http://registry2/eureka/
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: registry2
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: registry2
+    spec:
+      containers:
+      - name: registry2
+        image: hc68/support-registry-server:1.0.0
+        command:
+        - java
+        - -Duser.timezone=Asia/Shanghai
+        - -jar
+        - /support-registry-server-1.0.0-SNAPSHOT.jar
+        - --server.port=80
+        - --eureka.client.register-with-eureka=false
+        - --eureka.client.fetch-registry=false
+        - --eureka.client.serviceUrl.defaultZone=http://registry0/eureka/,http://registry1/eureka/
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: registry
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      initContainers:
+      - name: init0
+        image: busybox
+        command: ["sh","-c","until nslookup registry0; do echo waiting for registry0; sleep 2; done;"]
+      - name: init1
+        image: busybox
+        command: ["sh","-c","until nslookup registry1; do echo waiting for registry1; sleep 2; done;"]
+      - name: init2
+        image: busybox
+        command: ["sh","-c","until nslookup registry2; do echo waiting for registry2; sleep 2; done;"]
+      containers:
+      - name: registry
+        image: nginx:alpine
+        volumeMounts:
+        - name: registry-config-volume
+          mountPath: /etc/nginx/conf.d/
+      volumes:
+      - name: registry-config-volume
+        configMap:
+          name: registry-config
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: gateway
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      initContainers:
+      - name: init0
+        image: busybox
+        command: ["sh","-c","until nslookup registry; do echo waiting for registry; sleep 2; done;"]
+      containers:
+      - name: gateway
+        image: "hc68/support-gateway-server:1.0.0"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry0
+spec:
+  selector:
+    app: registry0
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 80
+    targetPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry1
+spec:
+  selector:
+    app: registry1
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 80
+    targetPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry2
+spec:
+  selector:
+    app: registry2
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 80
+    targetPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 80
+    targetPort: 80
