@@ -1,4 +1,5 @@
 #配置免密登录、主机名、hosts
+#--------------------------------------------------------------------
 - hosts: ctrl
   connection: local
   remote_user: root
@@ -48,6 +49,7 @@
       line: "{{ api_server_ip }} {{ api_server_doman }}"
 
 #准备，安装：必要软件、docker、k8s
+#--------------------------------------------------------------------
 - hosts: all
   remote_user: root
   tasks:
@@ -149,6 +151,7 @@
            docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
 
 #安装三个etcd
+#--------------------------------------------------------------------
 - hosts: ctrl
   remote_user: root
   vars:
@@ -265,6 +268,7 @@
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
 #初始化第一个master节点
+#--------------------------------------------------------------------
 - hosts: master[0]
   remote_user: root
   tasks:
@@ -340,6 +344,7 @@
     shell: sleep 60
 
 #获得加入集群的token
+#--------------------------------------------------------------------
 - hosts: master[0]
   remote_user: root
   tasks:
@@ -360,6 +365,7 @@
     register: discovery_token
 
 #其他master加入集群
+#--------------------------------------------------------------------
 - hosts: master[1],master[2]
   remote_user: root
   tasks:
@@ -410,6 +416,7 @@
     shell: sleep 10
 
 #node加入集群
+#--------------------------------------------------------------------
 - hosts: node
   remote_user: root
   tasks:
@@ -435,6 +442,7 @@
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
 
 #安装ingress
+#--------------------------------------------------------------------
 - hosts: master[0]
   remote_user: root
   tasks:
@@ -448,6 +456,7 @@
     shell: kubectl apply -f ingress-0.21.0.yaml
 
 #安装dashboard
+#--------------------------------------------------------------------
 - hosts: master[0]
   remote_user: root
   tasks:
@@ -476,6 +485,7 @@
     shell: kubectl apply -f dashboard-ingress.yaml
 
 #安装helm tiller
+#--------------------------------------------------------------------
 - hosts: master[0]
   remote_user: root
   tasks:
@@ -509,6 +519,7 @@
     shell: kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 
 #安装elk
+#--------------------------------------------------------------------
 - hosts: master[0]
   remote_user: root
   tasks:
