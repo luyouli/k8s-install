@@ -146,6 +146,12 @@
     shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64 &&\ 
            docker tag {{ ali_repo }}/flannel:v0.10.0-amd64 quay.io/coreos/flannel:v0.10.0-amd64 &&\ 
            docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
+- hosts: node
+  remote_user: root
+  tasks:
+  - name: 拉取ingress镜像
+    tags: prepare,prepare-images
+    shell: "docker pull {{ ali_repo }}/nginx-ingress-controller:0.21.0"
 
 #安装三个etcd
 #--------------------------------------------------------------------
