@@ -79,9 +79,6 @@
     - {"name":"net.bridge.bridge-nf-call-iptables", "value":1}
     - {"name":"net.bridge.bridge-nf-call-ip6tables","value":1}
     - {"name":"vm.swappiness","value":0}
-  #- name: 更新系统
-  #  tags: prepare,prepare-update
-  #  yum: name=* state=latest update_cache=yes
   - name: 安装必要软件
     tags: prepare,prepare-soft
     yum: name="{{ packages }}" state=present
