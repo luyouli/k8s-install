@@ -5,7 +5,6 @@ apiServer:
   certSANs:
   - "{{ api_server_ip }}"
   - "{{ api_server_doman }}"
-  - "{{ groups.master[0] }}"
 {% for ipaddr in groups.master %}
   - "{{ ipaddr }}"
 {% endfor %}
