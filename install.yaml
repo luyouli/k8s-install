@@ -548,3 +548,42 @@
   - name: 安装微服务
     tags: service-governance
     shell: kubectl apply -f service-governance.yaml
+
+#重置（清空）k8s集群
+#--------------------------------------------------------------------
+- hosts: etcd
+  remote_user: root
+  tasks:
+  - name: 删除容器
+    tags: reset,reset-etcd
+    shell: "docker rm -vf etcd"
+    ignore_errors: yes
+  - name: 删除目录
+    tags: reset,reset-etcd
+    file:
+      path: "{{ item }}"
+      state: absent
+    with_items:
+    - /etc/kubernetes
+    - /tmp/etcd
+    - /var/lib/etcd
+- hosts: node,master
+  remote_user: root
+  tasks:
+  - name: reset cluster
+    tags: reset,reset-k8s
+    shell: kubeadm reset -f
+  - name: reset iptables
+    tags: reset,reset-k8s
+    shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+  - name: reset cni0
+    tags: reset,reset-k8s
+    shell: ip link del cni0
+    ignore_errors: yes
+  - name: reset flannel.1
+    tags: reset,reset-k8s
+    shell: ip link del flannel.1
+    ignore_errors: yes
+
+#彻底删除k8s、docker，整个集群
+#--------------------------------------------------------------------
