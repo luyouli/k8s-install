@@ -490,7 +490,7 @@
 
 #安装helm tiller
 #--------------------------------------------------------------------
-- hosts: master[0]
+- hosts: ctrl
   remote_user: root
   tasks:
   - name: 判断helm tgz是否存在
