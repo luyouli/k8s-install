@@ -183,7 +183,7 @@ spec:
     spec:
       containers:
       - name: logstash-logging
-        image: logstash:6.4.0
+        image: registry.cn-beijing.aliyuncs.com/common-registry/logstash:6.4.0
         ports:
         - containerPort: 5044
           name: logstash
