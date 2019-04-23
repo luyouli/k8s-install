@@ -61,6 +61,13 @@
     tags: prepare,prepare-selinux
     shell: "setenforce 0 || true &&\ 
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config"
+  - name: 禁用swap
+    tags: prepare,prepare-swap
+    shell: swapoff -a
+    ignore_errors: yes
+  - name: 开机启动禁用swap
+    tags: prepare,prepare-swap
+    shell: "sed -i 's/^.*swap*/#&/g' /etc/fstab"
     ignore_errors: yes
   - name: 加载bridge、br_netfilter模块，并设置开机启动
     tags: prepare,prepare-modules
