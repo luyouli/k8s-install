@@ -448,7 +448,7 @@
       dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
-    shell: "kubeadm join {{ api_server_doman }}:6443 \
+    shell: "kubeadm join {{ groups.master[0] }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
 
 #安装ingress
