@@ -11,7 +11,7 @@ apiServer:
 networking:
   podSubnet: 10.244.0.0/16
   serviceSubnet: 10.96.0.0/12
-controlPlaneEndpoint: "{{ master[0] }}:6443"
+controlPlaneEndpoint: "{{ groups.master[0] }}:6443"
 etcd:
   external:
     endpoints:
