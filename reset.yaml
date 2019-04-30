@@ -42,19 +42,22 @@
 - hosts: node,master
   remote_user: root
   tasks:
-  - name: stop docker
+  - name: 停止docker
     tags: clear,stop-docker
     shell: systemctl stop docker
-  - name: remove softs
+  - name: 停止kubelet
+    tags: clear,stop-kubelet
+    shell: systemctl stop kubelet
+  - name: 卸载docker、k8s
     tags: clear,remove
     shell: yum -y remove docker* kube*
-  - name: reboot
+  - name: 重启机器
     tags: clear,remove
     shell: reboot
-  - name: reboot sleep
+  - name: 等待重启
     tags: clear,remove
-    shell: sleep 60
-  - name: reboot clear docker
+    shell: sleep 80
+  - name: 清理卸载残留
     tags: clear,remove
     shell: "rm -rf /etc/systemd/system/docker.service \
             /etc/systemd/system/docker.service.d \
@@ -63,3 +66,4 @@
   - name: reboot clear k8s
     tags: clear,remove
     shell: "for path in $(find / -name kube*); do rm -rf $path; done"
+    ignore_errors: yes
