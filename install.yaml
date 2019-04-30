@@ -53,6 +53,9 @@
 - hosts: all
   remote_user: root
   tasks:
+  - name: 更新系统
+    tags: prepare,prepare-update
+    yum: name=* state=latest update_cache=yes
   - name: 关闭防火墙
     tags: prepare,prepare-firewalld
     shell: "systemctl stop firewalld.service || true &&\ 
