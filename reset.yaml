@@ -65,6 +65,6 @@
             /var/lib/docker \
             /var/run/docker"
   - name: reboot clear k8s
-    tags: clear,clear-remove
+    tags: clear,clear-k8s
     shell: "for path in $(find / -name kube*); do rm -rf $path; done"
     ignore_errors: yes
