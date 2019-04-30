@@ -336,7 +336,7 @@
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
     tags: master,calico
-    file:
+    copy:
       src: files/calico.yaml
       dest: .
   - name: 安装calico网络
