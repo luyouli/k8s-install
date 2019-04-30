@@ -19,21 +19,21 @@
 - hosts: node,master
   remote_user: root
   tasks:
-  - name: reset cluster
+  - name: 重置K8s
     tags: reset,reset-k8s
     shell: kubeadm reset -f
-  - name: reset iptables
+  - name: 重置iptables
     tags: reset,reset-k8s
     shell: iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
-  - name: reset cni0
+  - name: 删除cni0网桥
     tags: reset,reset-k8s
     shell: ip link del cni0
     ignore_errors: yes
-  - name: reset flannel.1
+  - name: 删除flannel.1网桥
     tags: reset,reset-k8s
     shell: ip link del flannel.1
     ignore_errors: yes
-  - name: reset restart docker
+  - name: 重启docker
     tags: reset,restart-docker
     shell: systemctl restart docker
 
@@ -58,13 +58,13 @@
   - name: 等待重启
     tags: clear,remove
     shell: sleep 80
-  - name: 清理卸载残留
+  - name: 清理docker卸载残留
     tags: clear,clear-docker
     shell: "rm -rf /etc/systemd/system/docker.service \
             /etc/systemd/system/docker.service.d \
             /var/lib/docker \
             /var/run/docker"
-  - name: reboot clear k8s
+  - name: 清理k8s卸载残留
     tags: clear,clear-k8s
     shell: "for path in $(find / -name kube*); do rm -rf $path; done"
     ignore_errors: yes
