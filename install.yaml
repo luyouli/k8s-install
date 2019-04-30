@@ -314,6 +314,7 @@
     shell: "mkdir -p /root/.kube &&\ 
            rm -rf /root/.kube/config &&\ 
            cp /etc/kubernetes/admin.conf /root/.kube/config"
+  #安装flannel网络（与calico二选一）
   - name: 创建flannel配置文件目录
     tags: master,master-create-flannel
     file:
@@ -332,6 +333,15 @@
   - name: 安装flannel网络
     tags: master,master-create-flannel
     shell: kubectl apply -f kube-flannel.yml
+  #安装calico网络（与flannel二选一）
+  - name: 拷贝calico的yaml文件
+    tags: master,master-create-calico
+    file:
+      src: files/calicoo.yaml
+      dest: .
+  - name: 安装calico网络
+    tags: master,master-create-calico
+    shell: kubectl apply -f calicoo.yaml
   - name: 从master[0]拷贝k8s的config
     tags: master,master-ctrl-config
     fetch: src=/etc/kubernetes/admin.conf dest=/root/.kube/config flat=yes
