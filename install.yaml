@@ -316,31 +316,31 @@
            cp /etc/kubernetes/admin.conf /root/.kube/config"
   #安装flannel网络（与calico二选一）
   - name: 创建flannel配置文件目录
-    tags: master,master-create-flannel
+    tags: master,flannel
     file:
       path: /etc/cni/net.d/
       state: directory
   - name: 拷贝flannel配置文件
-    tags: master,master-create-flannel
+    tags: master,flannel
     copy:
       src: files/10-flannel.conflist
       dest: /etc/cni/net.d/
   - name: 拷贝kube-flannel.yml文件
-    tags: master,master-create-flannel
+    tags: master,flannel
     copy:
       src: files/kube-flannel.yml
       dest: .
   - name: 安装flannel网络
-    tags: master,master-create-flannel
+    tags: master,flannel
     shell: kubectl apply -f kube-flannel.yml
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
-    tags: master,master-create-calico
+    tags: master,calico
     file:
       src: files/calicoo.yaml
       dest: .
   - name: 安装calico网络
-    tags: master,master-create-calico
+    tags: master,calico
     shell: kubectl apply -f calicoo.yaml
   - name: 从master[0]拷贝k8s的config
     tags: master,master-ctrl-config
