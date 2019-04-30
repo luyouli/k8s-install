@@ -54,16 +54,17 @@
   - name: 重启机器
     tags: clear,remove
     shell: reboot
+    ignore_errors: yes
   - name: 等待重启
     tags: clear,remove
     shell: sleep 80
   - name: 清理卸载残留
-    tags: clear,remove
+    tags: clear,clear-docker
     shell: "rm -rf /etc/systemd/system/docker.service \
             /etc/systemd/system/docker.service.d \
             /var/lib/docker \
             /var/run/docker"
   - name: reboot clear k8s
-    tags: clear,remove
+    tags: clear,clear-remove
     shell: "for path in $(find / -name kube*); do rm -rf $path; done"
     ignore_errors: yes
