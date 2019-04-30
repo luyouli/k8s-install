@@ -337,11 +337,11 @@
   - name: 拷贝calico的yaml文件
     tags: master,calico
     file:
-      src: files/calicoo.yaml
+      src: files/calico.yaml
       dest: .
   - name: 安装calico网络
     tags: master,calico
-    shell: kubectl apply -f calicoo.yaml
+    shell: kubectl apply -f calico.yaml
   - name: 从master[0]拷贝k8s的config
     tags: master,master-ctrl-config
     fetch: src=/etc/kubernetes/admin.conf dest=/root/.kube/config flat=yes
