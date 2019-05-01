@@ -57,28 +57,28 @@
     tags: prepare,prepare-update
     yum: name=* state=latest update_cache=yes
   - name: 关闭防火墙
-    tags: prepare,prepare-firewalld
+    tags: prepare,prepare-env
     shell: "systemctl stop firewalld.service || true &&\ 
            systemctl disable firewalld.service || true "
   - name: 禁用selinux
-    tags: prepare,prepare-selinux
+    tags: prepare,prepare-env
     shell: "setenforce 0 || true &&\ 
             sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config"
   - name: 禁用swap
-    tags: prepare,prepare-swap
+    tags: prepare,prepare-env
     shell: swapoff -a
     ignore_errors: yes
   - name: 开机启动禁用swap
-    tags: prepare,prepare-swap
+    tags: prepare,prepare-env
     shell: "sed -i 's/^.*swap*/#&/g' /etc/fstab"
     ignore_errors: yes
   - name: 加载bridge、br_netfilter模块，并设置开机启动
-    tags: prepare,prepare-modules
+    tags: prepare,prepare-env
     shell: "modprobe bridge && modprobe br_netfilter &&\ 
             touch /etc/modules-load.d/k8s.conf && echo 'bridge' > /etc/modules-load.d/k8s.conf &&\ 
             echo 'br_netfilter' >> /etc/modules-load.d/k8s.conf"
   - name: 设置iptables转发规则
-    tags: prepare,prepare-sysctl
+    tags: prepare,prepare-env
     sysctl:
       name: "{{ item.name }}"
       value: "{{ item.value }}"
@@ -89,8 +89,11 @@
     - {"name":"net.bridge.bridge-nf-call-iptables", "value":1}
     - {"name":"net.bridge.bridge-nf-call-ip6tables","value":1}
     - {"name":"vm.swappiness","value":0}
+  - name: 同步时间
+    tags: prepare,prepare-env
+    shell: rm -rf /etc/localtime && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && ntpdate -u cn.pool.ntp.org
   - name: 安装必要软件
-    tags: prepare,prepare-soft
+    tags: prepare,prepare-softs
     yum: name="{{ packages }}" state=present
     vars:
       packages:
@@ -106,18 +109,15 @@
       - yum-utils
       - device-mapper-persistent-data
       - lvm2
-  - name: 同步时间
-    tags: prepare,prepare-time
-    shell: rm -rf /etc/localtime && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && ntpdate -u cn.pool.ntp.org
   - name: 配置源
-    tags: prepare,prepare-kubernetes.repo
+    tags: prepare,prepare-k8s
     copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
   - name: 判断是否配置过docker-ce.repo
-    tags: prepare,prepare-docker-ce.repo
+    tags: prepare,prepare-docker
     shell: ls /etc/yum.repos.d | grep docker-ce.repo || echo 0
     register: check_docker_ce_repo
   - name: 配置docker-ce.repo（如果没配置过）
-    tags: prepare,prepare-docker-ce.repo
+    tags: prepare,prepare-docker
     shell: "yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo"
     when: check_docker_ce_repo.stdout == "0"
   - name: 判断是否已安装docker
@@ -150,15 +150,26 @@
     shell: "docker pull {{ google_repo }}/{{ item }} &&\ 
             docker tag {{ google_repo }}/{{ item }} k8s.gcr.io/{{ item }} &&\ 
             docker rmi -f {{ google_repo }}/{{ item }}"
-    with_items: ["kube-proxy:v1.13.3","kube-apiserver:v1.13.3","kube-controller-manager:v1.13.3","kube-scheduler:v1.13.3","coredns:1.2.6","etcd:3.2.24","pause:3.1"]
-  - name: 拉取flannel镜像
+    with_items: 
+    - kube-proxy:v1.13.3
+    - kube-apiserver:v1.13.3
+    - kube-controller-manager:v1.13.3
+    - kube-scheduler:v1.13.3
+    - coredns:1.2.6
+    - etcd:3.2.24
+    - pause:3.1
+#  - name: 拉取flannel镜像
+#    tags: prepare,prepare-images
+#    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64 &&\ 
+#           docker tag {{ ali_repo }}/flannel:v0.10.0-amd64 quay.io/coreos/flannel:v0.10.0-amd64 &&\ 
+#           docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
+  - name: 拉取calico镜像
     tags: prepare,prepare-images
-    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64 &&\ 
-           docker tag {{ ali_repo }}/flannel:v0.10.0-amd64 quay.io/coreos/flannel:v0.10.0-amd64 &&\ 
-           docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
-- hosts: node
-  remote_user: root
-  tasks:
+    shell: "docker pull calico/{{ item }} "
+    with_items: 
+    - cni:v3.6.1
+    - node:v3.6.1
+    - kube-controllers:v3.6.1
   - name: 拉取ingress镜像
     tags: prepare,prepare-images
     shell: "docker pull {{ ali_repo }}/nginx-ingress-controller:0.21.0"
@@ -322,25 +333,26 @@
     shell: "mkdir -p /root/.kube &&\ 
            rm -rf /root/.kube/config &&\ 
            cp /etc/kubernetes/admin.conf /root/.kube/config"
-  #安装flannel网络（与calico二选一）
-  - name: 创建flannel配置文件目录
-    tags: master,master-flannel
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    tags: master,master-flannel
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
-  - name: 拷贝kube-flannel.yml文件
-    tags: master,master-flannel
-    copy:
-      src: files/kube-flannel.yml
-      dest: .
-  - name: 安装flannel网络
-    tags: master,master-flannel
-    shell: kubectl apply -f kube-flannel.yml
+#  #安装flannel网络（与calico二选一）
+#  - name: 创建flannel配置文件目录
+#    tags: master,master-flannel
+#    file:
+#      path: /etc/cni/net.d/
+#      state: directory
+#  - name: 拷贝flannel配置文件
+#    tags: master,master-flannel
+#    copy:
+#      src: files/10-flannel.conflist
+#      dest: /etc/cni/net.d/
+#  - name: 拷贝kube-flannel.yml文件
+#    tags: master,master-flannel
+#    copy:
+#      src: files/kube-flannel.yml
+#      dest: .
+#  - name: 安装flannel网络
+#    tags: master,master-flannel
+#    shell: kubectl apply -f kube-flannel.yml
+
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
     tags: master,master-calico
@@ -403,16 +415,16 @@
   - name: 设置discovery_token变量
     tags: masters,masters-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-  - name: 创建flannel配置文件目录
-    tags: masters,masters-flannel
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    tags: masters,masters-flannel
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
+#  - name: 创建flannel配置文件目录
+#    tags: masters,masters-flannel
+#    file:
+#      path: /etc/cni/net.d/
+#      state: directory
+#  - name: 拷贝flannel配置文件
+#    tags: masters,masters-flannel
+#    copy:
+#      src: files/10-flannel.conflist
+#      dest: /etc/cni/net.d/
   - name: 创建证书文件目录
     tags: masters,masters-certs
     file:
@@ -454,16 +466,16 @@
   - name: 设置discovery_token变量
     tags: node,node-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-  - name: 创建flannel配置文件目录
-    tags: node,node-flannel
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    tags: node,node-flannel
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
+#  - name: 创建flannel配置文件目录
+#    tags: node,node-flannel
+#    file:
+#      path: /etc/cni/net.d/
+#      state: directory
+#  - name: 拷贝flannel配置文件
+#    tags: node,node-flannel
+#    copy:
+#      src: files/10-flannel.conflist
+#      dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
     shell: "kubeadm join {{ api_server_ip }}:6443 \
