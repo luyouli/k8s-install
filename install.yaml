@@ -56,6 +56,23 @@
   - name: 更新系统
     tags: prepare,prepare-update
     yum: name=* state=latest update_cache=yes
+  - name: 安装必要软件
+    tags: prepare,prepare-softs
+    yum: name="{{ packages }}" state=present
+    vars:
+      packages:
+      - nfs-utils
+      - epel-release
+      - net-tools
+      - wget
+      - ntpdate
+      - bash-completion
+      - lrzsz
+      - unzip
+      - bridge-utils.x86_64
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
   - name: 关闭防火墙
     tags: prepare,prepare-env
     shell: "systemctl stop firewalld.service || true &&\ 
@@ -92,23 +109,6 @@
   - name: 同步时间
     tags: prepare,prepare-env
     shell: rm -rf /etc/localtime && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && ntpdate -u cn.pool.ntp.org
-  - name: 安装必要软件
-    tags: prepare,prepare-softs
-    yum: name="{{ packages }}" state=present
-    vars:
-      packages:
-      - nfs-utils
-      - epel-release
-      - net-tools
-      - wget
-      - ntpdate
-      - bash-completion
-      - lrzsz
-      - unzip
-      - bridge-utils.x86_64
-      - yum-utils
-      - device-mapper-persistent-data
-      - lvm2
   - name: 配置源
     tags: prepare,prepare-k8s
     copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
