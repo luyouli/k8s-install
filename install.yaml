@@ -144,7 +144,7 @@
       - kubectl-1.13.3
   - name: 开机启动kubelet
     tags: prepare,prepare-k8s
-    shell: systemctl daemon-reload;systemctl enable kubelet;systemctl start kubelet 
+    shell: systemctl daemon-reload;systemctl enable kubelet 
   - name: 拉取k8s必要镜像
     tags: prepare,prepare-images
     shell: "docker pull {{ google_repo }}/{{ item }} &&\ 
