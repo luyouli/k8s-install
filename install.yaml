@@ -242,6 +242,7 @@
       src: /tmp/etcd/etcd0/
       dest: /data/backup/etcd
 - hosts: etcd
+  remote_user: root
   tasks:
   - name: 删除/etc/kubernetes
     tags: etcd,etcd-create-kubernetes
