@@ -2,7 +2,6 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   connection: local
-#  remote_user: root
   tasks:
   - name: 检查秘钥是否存在
     tags: ssh,ssh-keygen
@@ -13,7 +12,6 @@
     command: ssh-keygen -t rsa -P "" -f /root/.ssh/id_rsa
     when: stat_result.stat.exists == false
 - hosts: all
-#  remote_user: root
   tasks:
   - name: 分发秘钥
     tags: ssh,ssh-auth-all
@@ -32,7 +30,6 @@
       path: /etc/hosts
       line: "{{inventory_hostname}} {{hostname}}"
 - hosts: master
-#  remote_user: root
   tasks:
   - name: 配置master的host：多个master负载均衡（master）
     tags: ssh,ssh-master
@@ -40,7 +37,6 @@
       path: /etc/hosts
       line: "{{ groups.master[0] }} {{ api_server_doman }}"
 - hosts: node,ctrl
-#  remote_user: root
   tasks:
   - name: 配置node的host：多个master负载均衡
     tags: ssh,ssh-node
@@ -51,7 +47,6 @@
 #准备，安装：必要软件、docker、k8s
 #--------------------------------------------------------------------
 - hosts: all
-#  remote_user: root
   tasks:
 #  - name: 更新系统
 #    tags: prepare,prepare-update
@@ -175,7 +170,6 @@
 #安装三个etcd
 #--------------------------------------------------------------------
 - hosts: ctrl
-#  remote_user: root
   vars:
     etcds:
     - {"path":"/tmp/etcd/etcd0","name":"etcd0","host":"{{ groups.etcd[0] }}"}
@@ -240,7 +234,6 @@
       src: /tmp/etcd/etcd0/
       dest: /data/backup/etcd
 - hosts: etcd
-#  remote_user: root
   tasks:
   - name: 删除/etc/kubernetes
     tags: etcd,etcd-create-kubernetes
@@ -298,7 +291,6 @@
 #初始化第一个master节点
 #--------------------------------------------------------------------
 - hosts: master[0]
-#  remote_user: root
   tasks:
   - name: 解决证书有效期为一年的问题
     tags: master,master-kubeadm
@@ -385,7 +377,6 @@
 #获得加入集群的token
 #--------------------------------------------------------------------
 - hosts: master[0]
-#  remote_user: root
   tasks:
   - name: 删除所有token
     tags: token
@@ -406,7 +397,6 @@
 #其他master加入集群
 #--------------------------------------------------------------------
 - hosts: master[1],master[2]
-#  remote_user: root
   tasks:
   - name: 设置master_token变量
     tags: masters,masters-token
@@ -457,7 +447,6 @@
 #node加入集群
 #--------------------------------------------------------------------
 - hosts: node
-#  remote_user: root
   tasks:
   - name: 设置master_token变量
     tags: node,node-token
@@ -483,7 +472,6 @@
 #安装ingress
 #--------------------------------------------------------------------
 - hosts: master[0]
-#  remote_user: root
   tasks:
   - name: 拷贝配置文件
     tags: ingress
@@ -497,7 +485,6 @@
 #安装dashboard
 #--------------------------------------------------------------------
 - hosts: master[0]
-#  remote_user: root
   tasks:
   - name: 拷贝配置文件
     tags: dashboard
@@ -527,22 +514,17 @@
 #安装helm tiller
 #--------------------------------------------------------------------
 - hosts: ctrl
-#  remote_user: root
   tasks:
-  - name: 判断helm tgz是否存在
+  - name: 检查helm是否存在
     tags: helm
-    shell: ls -l helm-v2.13.0-rc.2-linux-amd64.tar.gz || echo 0
-    register: check_helm_has
-  - name: 如果不存在下载
+    local_action: stat path=/usr/bin/helm
+    register: stat_result_helm
+  - name: 下载helm二进制文件
     tags: helm
-    shell: wget https://storage.googleapis.com/kubernetes-helm/helm-v2.13.0-rc.2-linux-amd64.tar.gz
-    when: check_helm_has.stdout == "0"
-  - name: 解压压缩包
-    tags: helm
-    shell: "rm -rf linux-amd64 && rm -rf /root/.helm &&\
-      tar -zxf helm-v2.13.0-rc.2-linux-amd64.tar.gz &&\
-      chmod +x -R linux-amd64 &&\
-      mv linux-amd64/helm linux-amd64/tiller -f /usr/bin/"
+    shell: "docker pull {{ ali_repo }}/helm:v2.13.0-rc.2 && docker run --rm -v /tmp/helm/:/tmp/helm/ \
+            {{ ali_repo }}/helm:v2.13.0-rc.2 sh -c 'cp /helm/* /tmp/helm' &&\ 
+            mv /tmp/helm/* /usr/bin/ -f || true && chmod +x /usr/bin/helm /usr/bin/tiller"
+    when: stat_result_helm.stat.exists == false
   - name: 初始化
     tags: helm
     shell: helm init --upgrade -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.13.0-rc.2 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
@@ -561,7 +543,6 @@
 #安装elk
 #--------------------------------------------------------------------
 - hosts: master[0]
-#  remote_user: root
   tasks:
   - name: 拷贝elk配置文件
     tags: elk
@@ -574,7 +555,6 @@
 #安装微服务
 #--------------------------------------------------------------------
 - hosts: master[0]
-#  remote_user: root
   tasks:
   - name: 拷贝微服务部署文件
     tags: service-governance

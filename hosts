@@ -1,23 +1,23 @@
 
 #配置文件，凡是以 * 开头的都需要根据实际情况修改
 
-# * 主控端，此节点制作远程命令执行
+# * 主控端，此节点制作远程命令执行，只改IP
 [ctrl]
 10.0.0.1 hostname=ctrl
 
-# * etcd节点列表，hostname自定义主机名
+# * etcd节点列表，hostname自定义主机名，只改IP
 [etcd]
 10.0.0.1 hostname=etcd0
 10.0.0.2 hostname=etcd1
 10.0.0.3 hostname=etcd2
 
-# * master节点列表，hostname自定义主机名
+# * master节点列表，hostname自定义主机名，只改IP
 [master]
 10.0.0.45 hostname=master0
 10.0.0.51 hostname=master1
 10.0.0.55 hostname=master2
 
-# * node节点列表，hostname自定义主机名
+# * node节点列表，hostname自定义主机名，只改IP
 [node]
 10.0.0.22 hostname=node0
 10.0.0.52 hostname=node1
@@ -27,7 +27,7 @@
 # * 多个master负载均衡的域名，注意如果需要外网访问要写真实的外网域名
 api_server_doman="apiserver.com"
 
-# * 多个master负载均衡的内网IP地址
+# * 多个master负载均衡的内网IP地址，如果没有负载均衡器填写master[0]的IP
 api_server_ip="192.168.0.24"
 
 # * web控制台的域名，注意如果需要外网访问要写真实的外网域名
