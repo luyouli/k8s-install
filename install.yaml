@@ -270,7 +270,7 @@
     shell: "docker run --name etcd --restart always -d -p 2379:2379 -p 2380:2380 \
             -v /var/lib/etcd/:/var/lib/etcd/ \
             -v /etc/kubernetes/:/etc/kubernetes/ \
-            k8s.gcr.io/etcd:3.2.24 etcd \
+            {{ google_repo }}/etcd:3.2.24 etcd \
             --advertise-client-urls=https://{{ inventory_hostname }}:2379 \
             --initial-advertise-peer-urls=https://{{ inventory_hostname }}:2380 \
             --initial-cluster='{{ hostvars[groups.etcd[0]]['hostname'] }}=https://{{ groups.etcd[0] }}:2380,{{ hostvars[groups.etcd[1]]['hostname'] }}=https://{{ groups.etcd[1] }}:2380,{{ hostvars[groups.etcd[2]]['hostname'] }}=https://{{ groups.etcd[2] }}:2380' \
