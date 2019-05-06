@@ -403,11 +403,11 @@
 #    copy:
 #      src: files/10-flannel.conflist
 #      dest: /etc/cni/net.d/
-#  - name: 创建证书文件目录
-#    tags: masters,flannel
-#    file:
-#      path: /etc/kubernetes/pki/etcd/
-#      state: directory
+  - name: 创建证书文件目录
+    tags: masters,masters-certs
+    file:
+      path: /etc/kubernetes/pki/etcd/
+      state: directory
   - name: 拷贝证书文件
     tags: masters,masters-certs
     copy:
