@@ -250,14 +250,14 @@
     file:
       path: /etc/kubernetes/pki/etcd/ca.key
       state: absent
-  - name: 判断是否已有etcd容器运行
-    tags: etcd,etcd-test
-    shell: docker ps -a | grep etcd || echo 0
-    register: etcd-test
+#  - name: 判断是否已有etcd容器运行
+#    tags: etcd,etcd-test
+#    shell: docker ps -a | grep etcd || echo 0
+#    register: etcd-test
   - name: 删除容器
     tags: etcd,etcd-delete-etcd
     shell: "docker rm -vf etcd"
-    when: etcd-test.stdout != "0"
+#    when: etcd-test.stdout != "0"
     ignore_errors: yes
   - name: 删除/var/lib/etcd
     tags: etcd,etcd-delete-etcd
