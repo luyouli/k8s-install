@@ -332,7 +332,7 @@
       dest: ./kube-flannel.yaml
   - name: 安装flannel网络
     tags: master,flannel
-    shell: kubectl apply -f kube-flannel.yml
+    shell: kubectl apply -f kube-flannel.yaml
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
     tags: master,calico
