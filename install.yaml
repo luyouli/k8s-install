@@ -148,9 +148,9 @@
     - coredns:1.2.6
     - etcd:3.2.24
     - pause:3.1
-  - name: 拉取flannel镜像
-    tags: prepare,flannel
-    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64"
+#  - name: 拉取flannel镜像
+#    tags: prepare,flannel
+#    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64"
   - name: 拉取calico镜像
     tags: prepare,calico
     shell: "docker pull {{ ali_repo }}/{{ item }} "
@@ -314,25 +314,25 @@
     shell: "mkdir -p /root/.kube &&\ 
            rm -rf /root/.kube/config &&\ 
            cp /etc/kubernetes/admin.conf /root/.kube/config"
-  #安装flannel网络（与calico二选一）
-  - name: 创建flannel配置文件目录
-    tags: master,flannel
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    tags: master,flannel
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
-  - name: 拷贝kube-flannel.yml文件
-    tags: master,flannel
-    copy:
-      src: files/kube-flannel.yml
-      dest: .
-  - name: 安装flannel网络
-    tags: master,flannel
-    shell: kubectl apply -f kube-flannel.yml
+#  #安装flannel网络（与calico二选一）
+#  - name: 创建flannel配置文件目录
+#    tags: master,flannel
+#    file:
+#      path: /etc/cni/net.d/
+#      state: directory
+#  - name: 拷贝flannel配置文件
+#    tags: master,flannel
+#    copy:
+#      src: files/10-flannel.conflist
+#      dest: /etc/cni/net.d/
+#  - name: 拷贝kube-flannel.yml文件
+#    tags: master,flannel
+#    template:
+#      src: files/kube-flannel.j2
+#      dest: ./kube-flannel.yaml
+#  - name: 安装flannel网络
+#    tags: master,flannel
+#    shell: kubectl apply -f kube-flannel.yml
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
     tags: master,calico
@@ -393,21 +393,21 @@
   - name: 设置discovery_token变量
     tags: masters,masters-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-  - name: 创建flannel配置文件目录
-    tags: masters,flannel
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    tags: masters,flannel
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
-  - name: 创建证书文件目录
-    tags: masters,flannel
-    file:
-      path: /etc/kubernetes/pki/etcd/
-      state: directory
+#  - name: 创建flannel配置文件目录
+#    tags: masters,flannel
+#    file:
+#      path: /etc/cni/net.d/
+#      state: directory
+#  - name: 拷贝flannel配置文件
+#    tags: masters,flannel
+#    copy:
+#      src: files/10-flannel.conflist
+#      dest: /etc/cni/net.d/
+#  - name: 创建证书文件目录
+#    tags: masters,flannel
+#    file:
+#      path: /etc/kubernetes/pki/etcd/
+#      state: directory
   - name: 拷贝证书文件
     tags: masters,masters-certs
     copy:
@@ -443,16 +443,16 @@
   - name: 设置discovery_token变量
     tags: node,node-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-  - name: 创建flannel配置文件目录
-    tags: node,flannel
-    file:
-      path: /etc/cni/net.d/
-      state: directory
-  - name: 拷贝flannel配置文件
-    tags: node,flannel
-    copy:
-      src: files/10-flannel.conflist
-      dest: /etc/cni/net.d/
+#  - name: 创建flannel配置文件目录
+#    tags: node,flannel
+#    file:
+#      path: /etc/cni/net.d/
+#      state: directory
+#  - name: 拷贝flannel配置文件
+#    tags: node,flannel
+#    copy:
+#      src: files/10-flannel.conflist
+#      dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
     shell: "kubeadm join {{ api_server_ip }}:6443 \
@@ -474,9 +474,13 @@
     shell: kubectl apply -f ingress-0.21.0.yaml
   - name: 等待ingress全部启动
     tags: ingress
-    shell: sleep 120
+    shell: kubectl get pods -n ingress-nginx | grep nginx-ingress-controller | grep -c Running
+    register: ingress_result
+    until: ingress_result.stdout == "{{groups.node | length}}"
+    retries: 9999
+    delay: 5
 #安装dashboard
-#-------------------------------------------------------------------
+#--------------------------------------------------------------------
 - hosts: master[0]
   tasks:
   - name: 拷贝配置文件
@@ -503,9 +507,13 @@
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
-  - name: 等待dashboard启动，1分钟
+  - name: 等待dashboard启动
     tags: dashboard
-    shell: sleep 60
+    shell: kubectl get pods -n kube-system | grep kubernetes-dashboard | grep -c Running
+    register: dashboard_result
+    until: dashboard_result.stdout >= "1"
+    retries: 9999
+    delay: 5
 #安装helm tiller
 #--------------------------------------------------------------------
 - hosts: ctrl
@@ -528,12 +536,19 @@
     template:
       src: files/tiller-rbac.j2
       dest: ./tiller-rbac.yaml
-  - name: 权限
+  - name: 执行权限
     tags: helm
     shell: kubectl apply -f tiller-rbac.yaml && sleep 4
-  - name: 修改
+  - name: 修改权限
     tags: helm
     shell: kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+  - name: 等待tiller启动
+    tags: helm
+    shell: kubectl get pods -n kube-system | grep tiller | grep -c Running
+    register: helm_result
+    until: helm_result.stdout >= "1"
+    retries: 9999
+    delay: 5
 #安装elk
 #--------------------------------------------------------------------
 - hosts: master[0]
