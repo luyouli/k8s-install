@@ -48,9 +48,6 @@
 #--------------------------------------------------------------------
 - hosts: all
   tasks:
-#  - name: 更新系统
-#    tags: prepare,prepare-update
-#    yum: name=* state=latest update_cache=yes
   - name: 安装必要软件
     tags: prepare,prepare-softs
     yum: name="{{ packages }}" state=present
@@ -151,13 +148,11 @@
     - coredns:1.2.6
     - etcd:3.2.24
     - pause:3.1
-#  - name: 拉取flannel镜像
-#    tags: prepare,prepare-images
-#    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64 &&\ 
-#           docker tag {{ ali_repo }}/flannel:v0.10.0-amd64 quay.io/coreos/flannel:v0.10.0-amd64 &&\ 
-#           docker rmi -f {{ ali_repo }}/flannel:v0.10.0-amd64"
+  - name: 拉取flannel镜像
+    tags: prepare,flannel
+    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64"
   - name: 拉取calico镜像
-    tags: prepare,prepare-images
+    tags: prepare,calico
     shell: "docker pull {{ ali_repo }}/{{ item }} "
     with_items: 
     - calico-cni:v3.6.1
@@ -250,14 +245,9 @@
     file:
       path: /etc/kubernetes/pki/etcd/ca.key
       state: absent
-#  - name: 判断是否已有etcd容器运行
-#    tags: etcd,etcd-test
-#    shell: docker ps -a | grep etcd || echo 0
-#    register: etcd-test
   - name: 删除容器
     tags: etcd,etcd-delete-etcd
     shell: "docker rm -vf etcd"
-#    when: etcd-test.stdout != "0"
     ignore_errors: yes
   - name: 删除/var/lib/etcd
     tags: etcd,etcd-delete-etcd
@@ -324,34 +314,33 @@
     shell: "mkdir -p /root/.kube &&\ 
            rm -rf /root/.kube/config &&\ 
            cp /etc/kubernetes/admin.conf /root/.kube/config"
-#  #安装flannel网络（与calico二选一）
-#  - name: 创建flannel配置文件目录
-#    tags: master,master-flannel
-#    file:
-#      path: /etc/cni/net.d/
-#      state: directory
-#  - name: 拷贝flannel配置文件
-#    tags: master,master-flannel
-#    copy:
-#      src: files/10-flannel.conflist
-#      dest: /etc/cni/net.d/
-#  - name: 拷贝kube-flannel.yml文件
-#    tags: master,master-flannel
-#    copy:
-#      src: files/kube-flannel.yml
-#      dest: .
-#  - name: 安装flannel网络
-#    tags: master,master-flannel
-#    shell: kubectl apply -f kube-flannel.yml
-
+  #安装flannel网络（与calico二选一）
+  - name: 创建flannel配置文件目录
+    tags: master,flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: master,flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
+  - name: 拷贝kube-flannel.yml文件
+    tags: master,flannel
+    copy:
+      src: files/kube-flannel.yml
+      dest: .
+  - name: 安装flannel网络
+    tags: master,flannel
+    shell: kubectl apply -f kube-flannel.yml
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
-    tags: master,master-calico
+    tags: master,calico
     copy:
       src: files/calico.yaml
       dest: .
   - name: 安装calico网络
-    tags: master,master-calico
+    tags: master,calico
     shell: kubectl apply -f calico.yaml
   - name: 从master[0]拷贝k8s的config
     tags: master,master-admin
@@ -370,9 +359,9 @@
     - "pki/apiserver-etcd-client.crt"
     - "pki/etcd/ca.crt"
     - "admin.conf"
-  - name: 等待master[0]启动，1分钟
+  - name: 等待master[0]启动，2分钟
     tags: master,master-sleep
-    shell: sleep 60
+    shell: sleep 120
 
 #获得加入集群的token
 #--------------------------------------------------------------------
@@ -404,18 +393,18 @@
   - name: 设置discovery_token变量
     tags: masters,masters-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-#  - name: 创建flannel配置文件目录
-#    tags: masters,masters-flannel
-#    file:
-#      path: /etc/cni/net.d/
-#      state: directory
-#  - name: 拷贝flannel配置文件
-#    tags: masters,masters-flannel
-#    copy:
-#      src: files/10-flannel.conflist
-#      dest: /etc/cni/net.d/
+  - name: 创建flannel配置文件目录
+    tags: masters,flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: masters,flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
   - name: 创建证书文件目录
-    tags: masters,masters-certs
+    tags: masters,flannel
     file:
       path: /etc/kubernetes/pki/etcd/
       state: directory
@@ -440,9 +429,9 @@
     shell: "kubeadm join {{ groups.master[0] }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }} \
             --experimental-control-plane"
-  - name: 等待masters启动，10秒
+  - name: 等待masters启动，1分钟
     tags: masters,masters-sleep
-    shell: sleep 10
+    shell: sleep 60
 
 #node加入集群
 #--------------------------------------------------------------------
@@ -454,21 +443,23 @@
   - name: 设置discovery_token变量
     tags: node,node-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-#  - name: 创建flannel配置文件目录
-#    tags: node,node-flannel
-#    file:
-#      path: /etc/cni/net.d/
-#      state: directory
-#  - name: 拷贝flannel配置文件
-#    tags: node,node-flannel
-#    copy:
-#      src: files/10-flannel.conflist
-#      dest: /etc/cni/net.d/
+  - name: 创建flannel配置文件目录
+    tags: node,flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: node,flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
     shell: "kubeadm join {{ api_server_ip }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
-
+  - name: 等待node启动，1分钟
+    tags: node,node-sleep
+    shell: sleep 60
 #安装ingress
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -481,7 +472,9 @@
   - name: 执行安装ingress
     tags: ingress
     shell: kubectl apply -f ingress-0.21.0.yaml
-
+  - name: 等待ingress全部启动
+    tags: ingress
+    shell: sleep 120
 #安装dashboard
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -510,7 +503,9 @@
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
-
+  - name: 等待dashboard启动，1分钟
+    tags: dashboard
+    shell: sleep 60
 #安装helm tiller
 #--------------------------------------------------------------------
 - hosts: ctrl
@@ -539,7 +534,6 @@
   - name: 修改
     tags: helm
     shell: kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
-
 #安装elk
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -552,15 +546,3 @@
   - name: 安装elk
     tags: elk
     shell: kubectl apply -f elk-all.yaml
-#安装微服务
-#--------------------------------------------------------------------
-- hosts: master[0]
-  tasks:
-  - name: 拷贝微服务部署文件
-    tags: service-governance
-    copy:
-      src: files/service-governance.yaml
-      dest: .
-  - name: 安装微服务
-    tags: service-governance
-    shell: kubectl apply -f service-governance.yaml
