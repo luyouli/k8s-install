@@ -318,7 +318,7 @@
     - pki/apiserver-etcd-client.key
   - name: 初始化第一个master
     tags: master,master-init
-    shell: "kubeadm init --config=kubeadm-config.yaml --image-repository={{ google_repo }}"
+    shell: kubeadm init --config=kubeadm-config.yaml
   - name: 配置kubectl的执行环境
     tags: master,master-env
     shell: "mkdir -p /root/.kube &&\ 
