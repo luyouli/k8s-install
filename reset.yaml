@@ -1,7 +1,7 @@
 #重置（清空）k8s集群
 #--------------------------------------------------------------------
 - hosts: etcd
-  remote_user: root
+#  remote_user: root
   tasks:
   - name: 删除容器
     tags: reset,reset-etcd
@@ -17,7 +17,7 @@
     - /tmp/etcd
     - /var/lib/etcd
 - hosts: node,master
-  remote_user: root
+#  remote_user: root
   tasks:
   - name: 重置K8s
     tags: reset,reset-k8s
@@ -40,7 +40,7 @@
 #彻底清理docker与k8s
 #--------------------------------------------------------------------
 - hosts: node,master
-  remote_user: root
+#  remote_user: root
   tasks:
   - name: 停止docker
     tags: clear,stop-docker
