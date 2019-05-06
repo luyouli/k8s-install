@@ -148,9 +148,9 @@
     - coredns:1.2.6
     - etcd:3.2.24
     - pause:3.1
-#  - name: 拉取flannel镜像
-#    tags: prepare,flannel
-#    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64"
+  - name: 拉取flannel镜像
+    tags: prepare,flannel
+    shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64"
   - name: 拉取calico镜像
     tags: prepare,calico
     shell: "docker pull {{ ali_repo }}/{{ item }} "
@@ -314,25 +314,25 @@
     shell: "mkdir -p /root/.kube &&\ 
            rm -rf /root/.kube/config &&\ 
            cp /etc/kubernetes/admin.conf /root/.kube/config"
-#  #安装flannel网络（与calico二选一）
-#  - name: 创建flannel配置文件目录
-#    tags: master,flannel
-#    file:
-#      path: /etc/cni/net.d/
-#      state: directory
-#  - name: 拷贝flannel配置文件
-#    tags: master,flannel
-#    copy:
-#      src: files/10-flannel.conflist
-#      dest: /etc/cni/net.d/
-#  - name: 拷贝kube-flannel.yml文件
-#    tags: master,flannel
-#    template:
-#      src: files/kube-flannel.j2
-#      dest: ./kube-flannel.yaml
-#  - name: 安装flannel网络
-#    tags: master,flannel
-#    shell: kubectl apply -f kube-flannel.yml
+  #安装flannel网络（与calico二选一）
+  - name: 创建flannel配置文件目录
+    tags: master,flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: master,flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
+  - name: 拷贝kube-flannel.yml文件
+    tags: master,flannel
+    template:
+      src: files/kube-flannel.j2
+      dest: ./kube-flannel.yaml
+  - name: 安装flannel网络
+    tags: master,flannel
+    shell: kubectl apply -f kube-flannel.yml
   #安装calico网络（与flannel二选一）
   - name: 拷贝calico的yaml文件
     tags: master,calico
@@ -393,16 +393,16 @@
   - name: 设置discovery_token变量
     tags: masters,masters-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-#  - name: 创建flannel配置文件目录
-#    tags: masters,flannel
-#    file:
-#      path: /etc/cni/net.d/
-#      state: directory
-#  - name: 拷贝flannel配置文件
-#    tags: masters,flannel
-#    copy:
-#      src: files/10-flannel.conflist
-#      dest: /etc/cni/net.d/
+  - name: 创建flannel配置文件目录
+    tags: masters,flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: masters,flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
   - name: 创建证书文件目录
     tags: masters,masters-certs
     file:
@@ -443,16 +443,16 @@
   - name: 设置discovery_token变量
     tags: node,node-token
     set_fact: discovery_token="{{ hostvars[groups.master[0]]['discovery_token'] }}"
-#  - name: 创建flannel配置文件目录
-#    tags: node,flannel
-#    file:
-#      path: /etc/cni/net.d/
-#      state: directory
-#  - name: 拷贝flannel配置文件
-#    tags: node,flannel
-#    copy:
-#      src: files/10-flannel.conflist
-#      dest: /etc/cni/net.d/
+  - name: 创建flannel配置文件目录
+    tags: node,flannel
+    file:
+      path: /etc/cni/net.d/
+      state: directory
+  - name: 拷贝flannel配置文件
+    tags: node,flannel
+    copy:
+      src: files/10-flannel.conflist
+      dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
     shell: "kubeadm join {{ api_server_ip }}:6443 \
