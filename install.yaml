@@ -147,9 +147,7 @@
     shell: systemctl daemon-reload;systemctl enable kubelet 
   - name: 拉取k8s必要镜像
     tags: prepare,prepare-images
-    shell: "docker pull {{ google_repo }}/{{ item }} &&\ 
-            docker tag {{ google_repo }}/{{ item }} k8s.gcr.io/{{ item }} &&\ 
-            docker rmi -f {{ google_repo }}/{{ item }}"
+    shell: "docker pull {{ google_repo }}/{{ item }}"
     with_items: 
     - kube-proxy:v1.13.3
     - kube-apiserver:v1.13.3
@@ -328,7 +326,7 @@
     - pki/apiserver-etcd-client.key
   - name: 初始化第一个master
     tags: master,master-init
-    shell: kubeadm init --config=kubeadm-config.yaml
+    shell: "kubeadm init --config=kubeadm-config.yaml --image-repository={{ google_repo }}"
   - name: 配置kubectl的执行环境
     tags: master,master-env
     shell: "mkdir -p /root/.kube &&\ 
