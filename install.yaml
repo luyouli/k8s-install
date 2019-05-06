@@ -149,10 +149,10 @@
     - etcd:3.2.24
     - pause:3.1
   - name: 拉取flannel镜像
-    tags: prepare,flannel
+    tags: prepare,flannel,flannel-images
     shell: "docker pull {{ ali_repo }}/flannel:v0.10.0-amd64"
   - name: 拉取calico镜像
-    tags: prepare,calico
+    tags: prepare,calico,calico-images
     shell: "docker pull {{ ali_repo }}/{{ item }} "
     with_items: 
     - calico-cni:v3.6.1
