@@ -362,8 +362,8 @@
   - name: 等待第一个master启动
     tags: master,master-wait
     shell: kubectl get pods --all-namespaces | grep -c Running
-    register: masters_result
-    until: masters_result.stdout >= "7"
+    register: master_result
+    until: master_result.stdout >= "7"
     retries: 9999
     delay: 5
 
