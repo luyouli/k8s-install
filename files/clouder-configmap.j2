@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clouder
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: service-governance
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mediacloudbase
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mediacloudrr
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubconfig
+  namespace: clouder
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  kubconfig-pro.yaml: |-
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority-data: "{{ certificate-authority-data }}"
+        server: https://10.38.0.42:6443
+      name: kubernetes
+    contexts:
+    - context:
+        cluster: kubernetes
+        user: kubernetes-admin
+      name: kubernetes-admin@kubernetes
+    current-context: kubernetes-admin@kubernetes
+    kind: Config
+    preferences: {}
+    users:
+    - name: kubernetes-admin
+      user:
+        client-certificate-data: "{{ client-certificate-data }}"
+        client-key-data: "{{ client-key-data }}"
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: mysql-config
+  namespace: clouder
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  my.cnf: |-
+    [client]
+    default_character_set=utf8
+    [mysqld]
+    character_set_server=utf8mb4
+    collation_server=utf8mb4_unicode_ci
+    lower_case_table_names=1
+    max_connections=1000
+    gtid_mode=on
+    enforce_gtid_consistency=on
+    server_id=1 
+    log_bin=mysql-bin
+    log_slave_updates=1
+    binlog_format=row
+    sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'

@@ -359,9 +359,13 @@
     - "pki/apiserver-etcd-client.crt"
     - "pki/etcd/ca.crt"
     - "admin.conf"
-  - name: 等待master[0]启动，2分钟
-    tags: master,master-sleep
-    shell: sleep 120
+  - name: 等待第一个master启动
+    tags: master,master-wait
+    shell: kubectl get pods --all-namespaces | grep -c Running
+    register: masters_result
+    until: masters_result.stdout >= "7"
+    retries: 9999
+    delay: 5
 
 #获得加入集群的token
 #--------------------------------------------------------------------
@@ -429,9 +433,13 @@
     shell: "kubeadm join {{ groups.master[0] }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }} \
             --experimental-control-plane"
-  - name: 等待masters启动，1分钟
-    tags: masters,masters-sleep
-    shell: sleep 60
+  - name: 等待masters启动
+    tags: masters,masters-wait
+    shell: kubectl get pods --all-namespaces | grep -c Running
+    register: masters_result
+    until: masters_result.stdout >= "17"
+    retries: 9999
+    delay: 5
 
 #node加入集群
 #--------------------------------------------------------------------
@@ -458,7 +466,7 @@
     shell: "kubeadm join {{ api_server_ip }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
   - name: 等待node启动，1分钟
-    tags: node,node-sleep
+    tags: node,node-wait
     shell: sleep 60
 #安装ingress
 #--------------------------------------------------------------------
@@ -473,7 +481,7 @@
     tags: ingress
     shell: kubectl apply -f ingress-0.21.0.yaml
   - name: 等待ingress全部启动
-    tags: ingress
+    tags: ingress,ingress-wait
     shell: kubectl get pods -n ingress-nginx | grep nginx-ingress-controller | grep -c Running
     register: ingress_result
     until: ingress_result.stdout == "{{groups.node | length}}"
@@ -508,7 +516,7 @@
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
   - name: 等待dashboard启动
-    tags: dashboard
+    tags: dashboard,dashboard-wait
     shell: kubectl get pods -n kube-system | grep kubernetes-dashboard | grep -c Running
     register: dashboard_result
     until: dashboard_result.stdout >= "1"
@@ -543,7 +551,7 @@
     tags: helm
     shell: kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
   - name: 等待tiller启动
-    tags: helm
+    tags: helm,helm-wait
     shell: kubectl get pods -n kube-system | grep tiller | grep -c Running
     register: helm_result
     until: helm_result.stdout >= "1"
