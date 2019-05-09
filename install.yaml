@@ -44,7 +44,7 @@
       path: /etc/hosts
       line: "{{ api_server_ip }} {{ api_server_doman }}"
 
-#准备，安装：必要软件、docker、k8s
+#准备，安装：必要软件、docker、k8s 
 #--------------------------------------------------------------------
 - hosts: all
   tasks:
