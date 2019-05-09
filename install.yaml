@@ -167,7 +167,7 @@
 - hosts: node
   tasks:
   - name: 配置节点最小剩余内存2G，避免内存跑满
-    tags: prepare,prepare-k8s
+    tags: prepare,prepare-k8s,prepare-k8s-memory
     shell: cat KUBELET_EXTRA_ARGS="\"--eviction-hard=memory.available<2048Mi\"" > /etc/sysconfig/kubelet
 #安装三个etcd
 #--------------------------------------------------------------------
