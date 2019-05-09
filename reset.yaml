@@ -69,7 +69,6 @@
   - name: 重启系统，等待80秒
     tags: clear,remove
     reboot:
-      msg: "重启系统"
       reboot_timeout: 80
   - name: 清理docker卸载残留
     tags: clear,clear-docker
