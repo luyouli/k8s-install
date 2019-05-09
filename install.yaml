@@ -48,6 +48,8 @@
 #--------------------------------------------------------------------
 - hosts: all
   tasks:
+  - name: 更新系统
+    yum: name=* state=latest update_cache=yes
   - name: 安装必要软件
     tags: prepare,prepare-softs
     yum: name="{{ packages }}" state=present
