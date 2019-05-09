@@ -48,16 +48,27 @@
   - name: 停止kubelet
     tags: clear,stop-kubelet
     shell: systemctl stop kubelet
-  - name: 卸载docker、k8s
+  - name: 彻底卸载k8s
     tags: clear,remove
-    shell: yum -y remove docker* kube*
-  - name: 重启机器
+    shell: yum -y remove kube*
+  - name: 彻底卸载docker
     tags: clear,remove
-    shell: reboot
+    shell: "yum -y remove docker* && yum -y remove docker \
+            docker-client \
+            docker-client-latest \
+            docker-common \
+            docker-latest \
+            docker-latest-logrotate \
+            docker-logrotate \
+            docker-selinux \
+            docker-engine-selinux \
+            docker-engine"
     ignore_errors: yes
-  - name: 等待重启
+  - name: 重启系统，等待80秒
     tags: clear,remove
-    shell: sleep 80
+    reboot:
+      msg: "重启系统"
+      reboot_timeout: 80
   - name: 清理docker卸载残留
     tags: clear,clear-docker
     shell: "rm -rf /etc/systemd/system/docker.service \
