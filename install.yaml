@@ -569,3 +569,24 @@
   - name: 安装elk
     tags: elk
     shell: kubectl apply -f elk-all.yaml
+#安装clouder
+#--------------------------------------------------------------------
+- hosts: master[0]
+  tasks:
+  - name: 获得certificate_authority_data变量
+    tags: clouder
+    shell: v=`cat /etc/kubernetes/admin.conf | grep certificate-authority-data:` && echo ${v#*certificate-authority-data:}
+    register: certificate_authority_data
+  - name: 获得client_certificate_data变量
+    tags: clouder
+    shell: v=`cat /etc/kubernetes/admin.conf | grep client-certificate-data:` && echo ${v#*client-certificate-data:}
+    register: client_certificate_data
+  - name: 获得client_key_data变量
+    tags: clouder
+    shell: v=`cat /etc/kubernetes/admin.conf | grep client-key-data:` && echo ${v#*client-key-data:}
+    register: client_key_data
+  - name: 拷贝配置文件
+    tags: clouder
+    template:
+      src: files/clouder-configmap.j2
+      dest: ./clouder-configmap.yaml
