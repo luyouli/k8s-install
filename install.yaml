@@ -101,9 +101,6 @@
   - name: 同步时间
     tags: prepare,prepare-env
     shell: rm -rf /etc/localtime && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && ntpdate -u cn.pool.ntp.org
-  - name: 配置源
-    tags: prepare,prepare-k8s
-    copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
   - name: 判断是否配置过docker-ce.repo
     tags: prepare,prepare-docker
     shell: ls /etc/yum.repos.d | grep docker-ce.repo || echo 0
@@ -125,6 +122,9 @@
   - name: 启动 docker
     tags: prepare,prepare-docker
     shell: systemctl daemon-reload;systemctl enable docker;systemctl start docker
+  - name: 配置k8s源
+    tags: prepare,prepare-k8s
+    copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
   - name: 安装k8s
     tags: prepare,prepare-k8s
     yum: name={{ packages }} state=present
