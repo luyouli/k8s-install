@@ -585,8 +585,15 @@
     tags: clouder
     shell: v=`cat /etc/kubernetes/admin.conf | grep client-key-data:` && echo ${v#*client-key-data:}
     register: client_key_data
+  - name: 获得api_server_token变量
+    tags: clouder
+    shell: v=`kubectl describe secret admin-user-token -n kube-system` && echo ${v#*token:}
+    register: api_server_token
   - name: 拷贝配置文件
     tags: clouder
     template:
       src: files/clouder-configmap.j2
       dest: ./clouder-configmap.yaml
+  - name: 安装clouder
+    tags: elk
+    shell: kubectl apply -f ./clouder-configmap.yaml
