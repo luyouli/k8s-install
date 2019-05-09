@@ -45,9 +45,11 @@
   - name: 停止docker
     tags: clear,stop-docker
     shell: systemctl stop docker
+    ignore_errors: yes
   - name: 停止kubelet
     tags: clear,stop-kubelet
     shell: systemctl stop kubelet
+    ignore_errors: yes
   - name: 彻底卸载k8s
     tags: clear,remove
     shell: yum -y remove kube*
