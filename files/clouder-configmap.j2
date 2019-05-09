@@ -31,7 +31,7 @@ data:
     apiVersion: v1
     clusters:
     - cluster:
-        certificate-authority-data: "{{ certificate-authority-data }}"
+        certificate-authority-data: "{{ certificate_authority_data.stdout }}"
         server: https://10.38.0.42:6443
       name: kubernetes
     contexts:
@@ -45,8 +45,8 @@ data:
     users:
     - name: kubernetes-admin
       user:
-        client-certificate-data: "{{ client-certificate-data }}"
-        client-key-data: "{{ client-key-data }}"
+        client-certificate-data: "{{ client_certificate_data.stdout }}"
+        client-key-data: "{{ client_key_data.stdout }}"
 ---
 kind: ConfigMap
 apiVersion: v1
