@@ -33,7 +33,7 @@ spec:
     spec:
       containers:
       - name: registry0
-        image: registry.cn-beijing.aliyuncs.com/gansu/support-registry-server:1.0.0.161
+        image: "{{ ali_cust }}/support-registry-server:1.0.0.161"
         command:
         - java
         - -Duser.timezone=Asia/Shanghai
@@ -57,7 +57,7 @@ spec:
     spec:
       containers:
       - name: registry1
-        image: registry.cn-beijing.aliyuncs.com/gansu/support-registry-server:1.0.0.161
+        image: "{{ ali_cust }}/support-registry-server:1.0.0.161"
         command:
         - java
         - -Duser.timezone=Asia/Shanghai
@@ -81,7 +81,7 @@ spec:
     spec:
       containers:
       - name: registry2
-        image: registry.cn-beijing.aliyuncs.com/gansu/support-registry-server:1.0.0.161
+        image: "{{ ali_cust }}/support-registry-server:1.0.0.161"
         command:
         - java
         - -Duser.timezone=Asia/Shanghai
@@ -141,7 +141,7 @@ spec:
         command: ["sh","-c","until nslookup registry; do echo waiting for registry; sleep 2; done;"]
       containers:
       - name: gateway
-        image: "registry.cn-beijing.aliyuncs.com/gansu/support-gateway-server:1.0.0.161"
+        image: "{{ ali_cust }}/support-gateway-server:1.0.0.161"
 ---
 kind: Service
 apiVersion: v1

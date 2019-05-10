@@ -599,8 +599,11 @@
   - name: 拷贝配置文件
     tags: clouder
     template:
-      src: files/clouder-configmap.j2
-      dest: ./clouder-configmap.yaml
-  - name: 安装clouder
-    tags: elk
-    shell: kubectl apply -f ./clouder-configmap.yaml
+      src: "files/{{ item }}.j2"
+      dest: "./{{ item }}.yaml"
+    with_items:
+    - clouder-configmap
+    - service-governance
+  - name: 安装微服务
+    tags: clouder
+    shell: kubectl apply -f ./service-governance.yaml
