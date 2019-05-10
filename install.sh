@@ -15,7 +15,6 @@ gpgcheck = 0
 EOF
 
 yum clean all && yum install -y ansible && yum -y install git
-sed -i 's/#host_key_checking/host_key_checking/g' /etc/ansible/ansible.cfg
 
 echo "git克隆ansible脚本"
 git clone https://github.com/javac2005/k8s-install.git
