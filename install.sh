@@ -12,7 +12,7 @@ enabled = 1
 gpgcheck = 0
 EOF
 
-echo "安装ansible和git"
+echo "安装ansible和git" 
 yum clean all && yum install -y ansible && yum -y install git
 sed -i 's/#host_key_checking/host_key_checking/g' /etc/ansible/ansible.cfg
 
