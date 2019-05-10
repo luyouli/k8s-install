@@ -8,9 +8,9 @@ metadata:
 data:
   registry.conf: |-
     upstream registry {
+      server registry0;
       server registry1;
       server registry2;
-      server registry3;
     }
     server {
         listen          80;
@@ -176,6 +176,19 @@ metadata:
 spec:
   selector:
     app: registry2
+  ports:
+  - name: tcp
+    protocol: TCP
+    port: 80
+    targetPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry
+spec:
+  selector:
+    app: registry
   ports:
   - name: tcp
     protocol: TCP
