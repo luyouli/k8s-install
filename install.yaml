@@ -440,7 +440,7 @@
     shell: "kubeadm join {{ groups.master[0] }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }} \
             --experimental-control-plane"
-  - name: 等待masters启动
+  - name: 等待其他master启动
     tags: masters,masters-wait
     shell: kubectl get pods --all-namespaces | grep -c Running
     register: masters_result
