@@ -166,9 +166,13 @@
     shell: "docker pull {{ ali_repo }}/nginx-ingress-controller:0.21.0"
 - hosts: node
   tasks:
+  - name: 安装共享存储
+    tags: prepare,prepare-storage
+    mount: fstype=nfs path=/k8s src="{{ nfs_server_host }}:/" state=mounted
   - name: 配置节点最小剩余内存2G，避免内存跑满
     tags: prepare,prepare-k8s,prepare-k8s-memory
     shell: echo 'KUBELET_EXTRA_ARGS="--eviction-hard=memory.available<2048Mi"' > /etc/sysconfig/kubelet
+
 #安装三个etcd
 #-------------------------------------------------------------------
 - hosts: ctrl
