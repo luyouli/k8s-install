@@ -3,6 +3,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: registry-config
+  namespace: service-governance
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
 data:
@@ -24,6 +25,7 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: registry0
+  namespace: service-governance
 spec:
   replicas: 1
   template:
@@ -48,6 +50,7 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: registry1
+  namespace: service-governance
 spec:
   replicas: 1
   template:
@@ -72,6 +75,7 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: registry2
+  namespace: service-governance
 spec:
   replicas: 1
   template:
@@ -96,6 +100,7 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: registry
+  namespace: service-governance
 spec:
   replicas: 1
   template:
@@ -128,6 +133,7 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: gateway
+  namespace: service-governance
 spec:
   replicas: 2
   template:
@@ -147,6 +153,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: registry0
+  namespace: service-governance
 spec:
   selector:
     app: registry0
@@ -160,6 +167,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: registry1
+  namespace: service-governance
 spec:
   selector:
     app: registry1
@@ -173,6 +181,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: registry2
+  namespace: service-governance
 spec:
   selector:
     app: registry2
@@ -186,6 +195,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: registry
+  namespace: service-governance
 spec:
   selector:
     app: registry
@@ -199,6 +209,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: gateway
+  namespace: service-governance
 spec:
   selector:
     app: gateway

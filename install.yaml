@@ -616,7 +616,9 @@
     shell: kubectl apply -f ./clouder-configmap.yaml
   - name: 安装clouder的token
     tags: clouder
-    shell: kubectl create secret generic api-server-token --from-file=./clouder-token.yaml -n clouder
+    shell: "rm -rf ./api-server-token &&\ 
+            mv ./clouder-token.yaml ./api-server-token &&\ 
+            kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
   - name: 安装微服务
     tags: clouder
     shell: kubectl apply -f ./service-governance.yaml
