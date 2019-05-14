@@ -77,5 +77,6 @@ kind: Secret
 metadata:
   name: api-server-token
   namespace: clouder
+type: Opaque
 data:
   api-server-token: {{ api_server_token.stdout }}
