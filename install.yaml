@@ -622,3 +622,4 @@
   - name: 安装微服务
     tags: clouder
     shell: kubectl apply -f ./service-governance.yaml
+ 
