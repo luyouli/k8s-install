@@ -600,7 +600,7 @@
     register: client_key_data
   - name: 获得api_server_token变量
     tags: clouder
-    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && echo ${v#*token:} | base64
+    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && echo ${v#*token:}
     register: api_server_token
   - name: 拷贝配置文件
     tags: clouder
