@@ -610,7 +610,9 @@
     with_items:
     - clouder-configmap
     - service-governance
-  - name: 安装微服务
+  - name: 安装clouder环境
     tags: clouder
     shell: kubectl apply -f ./clouder-configmap.yaml
+  - name: 安装微服务
+    tags: clouder
     shell: kubectl apply -f ./service-governance.yaml
