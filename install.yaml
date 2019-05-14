@@ -289,6 +289,7 @@
             --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
+
 #初始化第一个master节点
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -481,6 +482,7 @@
   - name: 等待node启动，1分钟
     tags: node,node-wait
     shell: sleep 60
+
 #安装ingress
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -500,6 +502,7 @@
     until: ingress_result.stdout == "{{groups.node | length}}"
     retries: 9999
     delay: 5
+
 #安装dashboard
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -535,6 +538,7 @@
     until: dashboard_result.stdout >= "1"
     retries: 9999
     delay: 5
+
 #安装helm tiller
 #--------------------------------------------------------------------
 - hosts: ctrl
@@ -570,6 +574,7 @@
     until: helm_result.stdout >= "1"
     retries: 9999
     delay: 5
+
 #安装elk
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -582,6 +587,7 @@
   - name: 安装elk
     tags: elk
     shell: kubectl apply -f elk-all.yaml
+
 #安装clouder
 #--------------------------------------------------------------------
 - hosts: master[0]
