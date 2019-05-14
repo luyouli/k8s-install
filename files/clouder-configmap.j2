@@ -72,11 +72,3 @@ data:
     binlog_format=row
     sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: api-server-token
-  namespace: clouder
-type: Opaque
-data:
-  api-server-token: {{ api_server_token.stdout }}
