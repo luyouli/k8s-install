@@ -555,7 +555,7 @@
     when: stat_result_helm.stat.exists == false
   - name: 初始化
     tags: helm
-    shell: helm init --upgrade -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.13.0-rc.2 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
+    shell: helm init --upgrade -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.13.0-rc.2 --stable-repo-url http://server.appstore.try.fzyun.cn/charts
   - name: 拷贝tiller-rbac.yaml配置文件
     tags: helm
     template:
