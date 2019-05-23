@@ -616,7 +616,7 @@
 
 #安装租户管理平台
 #--------------------------------------------------------------------
-- hosts: master[0]
+- hosts: ctrl
   tasks:
   - name: 获得api_server_token变量
     tags: clouder
