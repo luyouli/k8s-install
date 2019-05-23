@@ -640,4 +640,4 @@
     shell: "helm update && \
             helm install stable/clouder \
             --name=clouder --namespace=clouder \
-            --set apiServerIp.value={{ loadbalance_external_ip }},rootDomain.value={{ root_domain }}"
+            --set apiServerIp.value={{ loadbalance_inside_ip }},rootDomain.value={{ root_domain }}"
