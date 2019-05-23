@@ -600,22 +600,17 @@
     shell: kubectl apply -f ./clouder-namespaces.yaml
     ignore_errors: yes
 
-#安装微服务
+#安装微服务，并等待微服务启动
 #--------------------------------------------------------------------
 - hosts: master[0]
   tasks:
   - name: 安装微服务
     tags: service-governance
-    shell: helm update && helm install stable/service-governance --name=service-governance --namespace=service-governance --wait
-- hosts: master[0]
-  tasks:
-  - name: 等待微服务启动
-    tags: service-governance
-    shell: helm list --all | grep service-governance | awk '{print $8}'
-    register: service_governance_result
-    until: service_governance_result.stdout == "DEPLOYED"
-    retries: 9999
-    delay: 5
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep service-governance-` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=service-governance --namespace=service-governance --wait"
 
 #安装租户管理平台
 #--------------------------------------------------------------------
@@ -637,7 +632,9 @@
             kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
   - name: 安装租户管理平台
     tags: clouder
-    shell: "helm update && \
-            helm install stable/clouder \
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep clouder-` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
             --name=clouder --namespace=clouder \
             --set apiServerIp.value={{ loadbalance_inside_ip }},rootDomain.value={{ root_domain }}"
