@@ -607,7 +607,7 @@
   - name: 安装微服务
     tags: service-governance
     shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
-            tgzurl=`cat index.yaml | grep service-governance-` && \
+            tgzurl=`cat index.yaml | grep charts/service-governance` && \
             tgzurl=`echo ${tgzurl#*-}` && \
             helm install $tgzurl \
             --name=service-governance \
