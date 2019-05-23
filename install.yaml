@@ -640,3 +640,28 @@
             helm install $tgzurl \
             --name=clouder --namespace=clouder \
             --set apiServerIp.value={{ loadbalance_inside_ip }},rootDomain.value={{ root_domain }}"
+
+#安装微服务，并等待微服务启动
+#--------------------------------------------------------------------
+- hosts: ctrl
+  tasks:
+  - name: 安装mediacloudbase
+    tags: mediacloudbase
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep charts/mediacloudbase` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=mediacloudbase \
+            --namespace=mediacloudbase \
+            --set dockerRepo.value={{ ali_cust }} --wait"
+- hosts: ctrl
+  tasks:
+  - name: 安装mediacloudrr
+    tags: mediacloudrr
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep charts/mediacloudrr` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=mediacloudrr \
+            --namespace=mediacloudrr \
+            --set dockerRepo.value={{ ali_cust }},rootDomain.value={{ root_domain }}"
