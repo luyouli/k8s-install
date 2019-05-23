@@ -639,5 +639,5 @@
     tags: clouder
     shell: "helm update && \
             helm install stable/clouder \
-            --name=clouder --namespace=clouder --wait \
+            --name=clouder --namespace=clouder \
             --set apiServerIp.value={{ loadbalance_external_ip }},rootDomain.value={{ root_domain }}"
