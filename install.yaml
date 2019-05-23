@@ -610,7 +610,9 @@
             tgzurl=`cat index.yaml | grep service-governance-` && \
             tgzurl=`echo ${tgzurl#*-}` && \
             helm install $tgzurl \
-            --name=service-governance --namespace=service-governance --wait"
+            --name=service-governance \
+            --namespace=service-governance \
+            --set dockerRepo.value={{ ali_cust }} --wait"
 
 #安装租户管理平台
 #--------------------------------------------------------------------
@@ -633,7 +635,7 @@
   - name: 安装租户管理平台
     tags: clouder
     shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
-            tgzurl=`cat index.yaml | grep clouder-` && \
+            tgzurl=`cat index.yaml | grep charts/clouder-` && \
             tgzurl=`echo ${tgzurl#*-}` && \
             helm install $tgzurl \
             --name=clouder --namespace=clouder \
