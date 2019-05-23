@@ -66,10 +66,10 @@
             docker-engine-selinux \
             docker-engine"
     ignore_errors: yes
-  - name: 重启系统，等待80秒
-    tags: clear,remove
-    reboot:
-      reboot_timeout: 80
+#  - name: 重启系统，等待80秒
+#    tags: clear,remove
+#    reboot:
+#      reboot_timeout: 80
   - name: 清理docker卸载残留
     tags: clear,clear-docker
     shell: "rm -rf /etc/systemd/system/docker.service \

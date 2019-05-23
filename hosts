@@ -24,14 +24,15 @@
 
 #系统变量，凡是以 * 开头的都需要根据实际情况修改
 [all:vars]
-# * 多个master负载均衡的域名，注意如果需要外网访问要写真实的外网域名
-api_server_doman="apiserver.com"
 
-# * 多个master负载均衡的内网IP地址，如果没有负载均衡器填写master[0]的IP
-api_server_ip="192.168.0.24"
+# * 根域名，注意如果需要外网访问要写真实的外网域名
+root_domain="test.com"
 
-# * web控制台的域名，注意如果需要外网访问要写真实的外网域名
-dashboard_doman="dashboard.apiserver.com"
+# * 负载均衡内网IP
+loadbalance_inside_ip="192.168.0.24"
+
+# * 负载均衡外网IP，如果没有写负载均衡内网IP
+loadbalance_external_ip="47.92.130.28"
 
 # * 存储地址（nfs）
 nfs_server_host=10.0.0.55

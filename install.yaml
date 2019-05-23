@@ -35,14 +35,14 @@
     tags: ssh,ssh-master
     lineinfile:
       path: /etc/hosts
-      line: "{{ groups.master[0] }} {{ api_server_doman }}"
+      line: "{{ groups.master[0] }} apiserver.{{ root_domain }}"
 - hosts: node,ctrl
   tasks:
   - name: 配置node的host：多个master负载均衡
     tags: ssh,ssh-node
     lineinfile:
       path: /etc/hosts
-      line: "{{ api_server_ip }} {{ api_server_doman }}"
+      line: "{{ loadbalance_inside_ip }} apiserver.{{ root_domain }}"
 
 #准备，安装：必要软件、docker、k8s 
 #--------------------------------------------------------------------
@@ -289,6 +289,7 @@
             --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt \
             --snapshot-count=10000 \
             --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt"
+
 #初始化第一个master节点
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -476,11 +477,12 @@
       dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
-    shell: "kubeadm join {{ api_server_ip }}:6443 \
+    shell: "kubeadm join {{ loadbalance_inside_ip }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
   - name: 等待node启动，1分钟
     tags: node,node-wait
     shell: sleep 60
+
 #安装ingress
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -500,6 +502,7 @@
     until: ingress_result.stdout == "{{groups.node | length}}"
     retries: 9999
     delay: 5
+
 #安装dashboard
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -522,9 +525,9 @@
   - name: 安装dashboard的ingress证书
     tags: dashboard
     shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
-            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./{{ dashboard_doman }}.key -out ./{{ dashboard_doman }}.crt -subj '/CN={{ dashboard_doman }}' &&\ 
-            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./{{ dashboard_doman }}.key --cert ./{{ dashboard_doman }}.crt &&\ 
-            cat {{ dashboard_doman }}.crt {{ dashboard_doman }}.key | tee {{ dashboard_doman }}.pem"
+            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./dashboard.{{ root_domain }}.key -out ./dashboard.{{ root_domain }}.crt -subj '/CN=dashboard.{{ root_domain }}' &&\ 
+            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./dashboard.{{ root_domain }}.key --cert ./dashboard.{{ root_domain }}.crt &&\ 
+            cat dashboard.{{ root_domain }}.crt dashboard.{{ root_domain }}.key | tee dashboard.{{ root_domain }}.pem"
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
@@ -535,6 +538,7 @@
     until: dashboard_result.stdout >= "1"
     retries: 9999
     delay: 5
+
 #安装helm tiller
 #--------------------------------------------------------------------
 - hosts: ctrl
@@ -551,7 +555,7 @@
     when: stat_result_helm.stat.exists == false
   - name: 初始化
     tags: helm
-    shell: helm init --upgrade -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.13.0-rc.2 --stable-repo-url https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
+    shell: helm init --upgrade -i registry.cn-hangzhou.aliyuncs.com/google_containers/tiller:v2.13.0-rc.2 --stable-repo-url http://server.appstore.try.fzyun.cn/charts
   - name: 拷贝tiller-rbac.yaml配置文件
     tags: helm
     template:
@@ -570,6 +574,7 @@
     until: helm_result.stdout >= "1"
     retries: 9999
     delay: 5
+
 #安装elk
 #--------------------------------------------------------------------
 - hosts: master[0]
@@ -582,22 +587,37 @@
   - name: 安装elk
     tags: elk
     shell: kubectl apply -f elk-all.yaml
-#安装clouder
+
+#创建命名空间
 #--------------------------------------------------------------------
 - hosts: master[0]
   tasks:
-  - name: 获得certificate_authority_data变量
-    tags: clouder
-    shell: v=`cat /etc/kubernetes/admin.conf | grep certificate-authority-data:` && echo ${v#*certificate-authority-data:}
-    register: certificate_authority_data
-  - name: 获得client_certificate_data变量
-    tags: clouder
-    shell: v=`cat /etc/kubernetes/admin.conf | grep client-certificate-data:` && echo ${v#*client-certificate-data:}
-    register: client_certificate_data
-  - name: 获得client_key_data变量
-    tags: clouder
-    shell: v=`cat /etc/kubernetes/admin.conf | grep client-key-data:` && echo ${v#*client-key-data:}
-    register: client_key_data
+  - name: 拷贝命名空间配置文件
+    tags: namespaces
+    copy: src=files/clouder-namespaces.yaml dest=.
+  - name: 创建命名空间
+    tags: namespaces
+    shell: kubectl apply -f ./clouder-namespaces.yaml
+    ignore_errors: yes
+
+#安装微服务，并等待微服务启动
+#--------------------------------------------------------------------
+- hosts: ctrl
+  tasks:
+  - name: 安装微服务
+    tags: service-governance
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep charts/service-governance` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=service-governance \
+            --namespace=service-governance \
+            --set dockerRepo.value={{ ali_cust }} --wait"
+
+#安装租户管理平台
+#--------------------------------------------------------------------
+- hosts: ctrl
+  tasks:
   - name: 获得api_server_token变量
     tags: clouder
     shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && echo ${v#*token:}
@@ -605,20 +625,43 @@
   - name: 拷贝配置文件
     tags: clouder
     template:
-      src: "files/{{ item }}.j2"
-      dest: "./{{ item }}.yaml"
-    with_items:
-    - clouder-configmap
-    - service-governance
-    - clouder-token
-  - name: 安装clouder的configMaps
-    tags: clouder
-    shell: kubectl apply -f ./clouder-configmap.yaml
+      src: files/clouder-api-server-token.j2
+      dest: ./clouder-api-server-token.yaml
   - name: 安装clouder的token
     tags: clouder
     shell: "rm -rf ./api-server-token &&\ 
-            mv ./clouder-token.yaml ./api-server-token &&\ 
+            mv ./clouder-api-server-token.yaml ./api-server-token &&\ 
             kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
-  - name: 安装微服务
+  - name: 安装租户管理平台
     tags: clouder
-    shell: kubectl apply -f ./service-governance.yaml
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep charts/clouder-` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=clouder --namespace=clouder \
+            --set apiServerIp.value={{ loadbalance_inside_ip }},rootDomain.value={{ root_domain }}"
+
+#安装mediacloudbase与mediacloudrr
+#--------------------------------------------------------------------
+- hosts: ctrl
+  tasks:
+  - name: 安装mediacloudbase，并等待启动成功……
+    tags: mediacloudbase
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep charts/mediacloudbase` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=mediacloudbase \
+            --namespace=mediacloudbase \
+            --set dockerRepo.value={{ ali_cust }} --wait"
+- hosts: ctrl
+  tasks:
+  - name: 安装mediacloudrr
+    tags: mediacloudrr
+    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
+            tgzurl=`cat index.yaml | grep charts/mediacloudrr` && \
+            tgzurl=`echo ${tgzurl#*-}` && \
+            helm install $tgzurl \
+            --name=mediacloudrr \
+            --namespace=mediacloudrr \
+            --set dockerRepo.value={{ ali_cust }},rootDomain.value={{ root_domain }}"

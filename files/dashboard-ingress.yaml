@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - "{{ dashboard_doman }}"
+    - "dashboard.{{ root_domain }}"
     secretName: k8s-dashboard-secret
   rules:
-    - host: "{{ dashboard_doman }}"
+    - host: "dashboard.{{ root_domain }}"
       http:
         paths:
         - path: /

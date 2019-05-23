@@ -1,0 +1,21 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clouder
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: service-governance
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mediacloudbase
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mediacloudrr
+---
