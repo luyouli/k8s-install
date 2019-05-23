@@ -6,14 +6,14 @@ apiServer:
   certSANs:
   - "{{ loadbalance_external_ip }}"
   - "{{ loadbalance_inside_ip }}"
-  - "{{ api_server_doman }}"
+  - "apiserver.{{ root_domain }}"
 {% for ipaddr in groups.master %}
   - "{{ ipaddr }}"
 {% endfor %}
 networking:
   podSubnet: 10.244.0.0/16
   serviceSubnet: 10.96.0.0/12
-controlPlaneEndpoint: "{{ api_server_doman }}:6443"
+controlPlaneEndpoint: "apiserver.{{ root_domain }}:6443"
 etcd:
   external:
     endpoints:

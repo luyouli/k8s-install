@@ -35,14 +35,14 @@
     tags: ssh,ssh-master
     lineinfile:
       path: /etc/hosts
-      line: "{{ groups.master[0] }} {{ api_server_doman }}"
+      line: "{{ groups.master[0] }} apiserver.{{ root_domain }}"
 - hosts: node,ctrl
   tasks:
   - name: 配置node的host：多个master负载均衡
     tags: ssh,ssh-node
     lineinfile:
       path: /etc/hosts
-      line: "{{ loadbalance_inside_ip }} {{ api_server_doman }}"
+      line: "{{ loadbalance_inside_ip }} apiserver.{{ root_domain }}"
 
 #准备，安装：必要软件、docker、k8s 
 #--------------------------------------------------------------------
@@ -525,9 +525,9 @@
   - name: 安装dashboard的ingress证书
     tags: dashboard
     shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
-            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./{{ dashboard_doman }}.key -out ./{{ dashboard_doman }}.crt -subj '/CN={{ dashboard_doman }}' &&\ 
-            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./{{ dashboard_doman }}.key --cert ./{{ dashboard_doman }}.crt &&\ 
-            cat {{ dashboard_doman }}.crt {{ dashboard_doman }}.key | tee {{ dashboard_doman }}.pem"
+            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./dashboard.{{ root_domain }}.key -out ./dashboard.{{ root_domain }}.crt -subj '/CN=dashboard.{{ root_domain }}' &&\ 
+            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./dashboard.{{ root_domain }}.key --cert ./dashboard.{{ root_domain }}.crt &&\ 
+            cat dashboard.{{ root_domain }}.crt dashboard.{{ root_domain }}.key | tee dashboard.{{ root_domain }}.pem"
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
@@ -637,4 +637,7 @@
             kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
   - name: 安装租户管理平台
     tags: clouder
-    shell: helm install 
+    shell: "helm update && \
+            helm install stable/clouder \
+            --name=clouder --namespace=clouder --wait \
+            --set apiServerIp.value={{ loadbalance_external_ip }},rootDomain.value={{ root_domain }}"
