@@ -29,10 +29,10 @@
 root_domain="test.com"
 
 # * 负载均衡内网IP
-loadbalance_external_ip="47.92.130.28"
+loadbalance_inside_ip="192.168.0.24"
 
 # * 负载均衡外网IP，如果没有写负载均衡内网IP
-loadbalance_inside_ip="192.168.0.24"
+loadbalance_external_ip="47.92.130.28"
 
 # * 存储地址（nfs）
 nfs_server_host=10.0.0.55
