@@ -42,7 +42,7 @@
     tags: ssh,ssh-node
     lineinfile:
       path: /etc/hosts
-      line: "{{ api_server_ip }} {{ api_server_doman }}"
+      line: "{{ loadbalance_inside_ip }} {{ api_server_doman }}"
 
 #准备，安装：必要软件、docker、k8s 
 #--------------------------------------------------------------------
@@ -477,7 +477,7 @@
       dest: /etc/cni/net.d/
   - name: node加入集群
     tags: node,node-join
-    shell: "kubeadm join {{ api_server_ip }}:6443 \
+    shell: "kubeadm join {{ loadbalance_inside_ip }}:6443 \
             --token {{ master_token.stdout }} --discovery-token-ca-cert-hash sha256:{{ discovery_token.stdout }}"
   - name: 等待node启动，1分钟
     tags: node,node-wait
@@ -635,3 +635,6 @@
     shell: "rm -rf ./api-server-token &&\ 
             mv ./clouder-api-server-token.yaml ./api-server-token &&\ 
             kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
+  - name: 安装租户管理平台
+    tags: clouder
+    shell: helm install 

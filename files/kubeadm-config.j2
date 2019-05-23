@@ -4,7 +4,8 @@ kubernetesVersion: v1.13.3
 imageRepository: "{{ google_repo }}"
 apiServer:
   certSANs:
-  - "{{ api_server_ip }}"
+  - "{{ loadbalance_external_ip }}"
+  - "{{ loadbalance_inside_ip }}"
   - "{{ api_server_doman }}"
 {% for ipaddr in groups.master %}
   - "{{ ipaddr }}"
