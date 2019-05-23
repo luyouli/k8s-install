@@ -641,7 +641,7 @@
             --name=clouder --namespace=clouder \
             --set apiServerIp.value={{ loadbalance_inside_ip }},rootDomain.value={{ root_domain }}"
 
-#安装微服务，并等待微服务启动
+#安装mediacloudbase与mediacloudrr
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
