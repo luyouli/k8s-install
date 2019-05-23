@@ -645,7 +645,7 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
-  - name: 安装mediacloudbase
+  - name: 安装mediacloudbase，并等待启动成功……
     tags: mediacloudbase
     shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
             tgzurl=`cat index.yaml | grep charts/mediacloudbase` && \
