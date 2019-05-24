@@ -609,7 +609,7 @@
     shell: "helm repo update && \
             helm install stable/service-governance \
             --name service-governance --namespace service-governance \
-            --set dockerRepo.value=dockerRepo.value={{ ali_cust }} --wait"
+            --set dockerRepo.value={{ ali_cust }} --wait"
 
 #安装租户管理平台
 #--------------------------------------------------------------------
