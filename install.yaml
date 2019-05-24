@@ -604,11 +604,12 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
-  - name: 安装微服务
+  - name: 安装微服务，并等待微服务启动…………
     tags: service-governance
     shell: "helm repo update && \
             helm install stable/service-governance \
-            --name service-governance --namespace service-governance"
+            --name service-governance --namespace service-governance \
+            --set dockerRepo.value=dockerRepo.value={{ ali_cust }} --wait"
 
 #安装租户管理平台
 #--------------------------------------------------------------------
