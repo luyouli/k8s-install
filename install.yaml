@@ -638,7 +638,7 @@
             apiServerIp.value={{ loadbalance_inside_ip }},\
             rootDomain.value={{ root_domain }}"
 
-#安装mediacloudbase与mediacloudrr
+#安装mediacloudbase
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
@@ -649,6 +649,9 @@
             --name=mediacloudbase \
             --namespace=mediacloudbase \
             --set dockerRepo.value={{ ali_cust }} --wait"
+
+#安装mediacloudrr
+#--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
   - name: 安装mediacloudrr
