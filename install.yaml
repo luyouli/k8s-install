@@ -616,7 +616,15 @@
     shell: "helm repo update && \
             helm install stable/service-governance \
             --name service-governance --namespace service-governance \
-            --set dockerRepo.value={{ ali_cust }} --wait"
+            --set dockerRepo.value={{ ali_cust }}"
+  - shell: sleep 1
+  - name: 等待微服务启动
+    tags: service-governance
+    shell: kubectl get pods -n service-governance | grep -c "0/1"
+    register: service_governance_result
+    until: service_governance_result.stdout == "0"
+    retries: 9999
+    delay: 5
 
 #安装租户管理平台
 #--------------------------------------------------------------------
@@ -655,7 +663,15 @@
             helm install stable/mediacloudbase \
             --name=mediacloudbase \
             --namespace=mediacloudbase \
-            --set dockerRepo.value={{ ali_cust }} --wait"
+            --set dockerRepo.value={{ ali_cust }}"
+  - shell: sleep 1
+  - name: 等待mediacloudbase启动
+    tags: mediacloudbase
+    shell: kubectl get pods -n mediacloudbase | grep -c "0/1"
+    register: mediacloudbase_result
+    until: mediacloudbase_result.stdout == "0"
+    retries: 9999
+    delay: 5
 
 #安装mediacloudrr
 #--------------------------------------------------------------------
