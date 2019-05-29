@@ -667,7 +667,7 @@
   - shell: sleep 1
   - name: 等待mediacloudbase启动
     tags: mediacloudbase
-    shell: kubectl get pods -n mediacloudbase | grep -c '0/1'
+    shell: kubectl get pods -n mediacloudbase | grep '0/1' -wc
     register: mediacloudbase_result
     until: mediacloudbase_result.stdout == "0"
     retries: 9999
