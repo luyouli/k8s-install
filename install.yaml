@@ -620,11 +620,12 @@
   - shell: sleep 1
   - name: 等待微服务启动
     tags: service-governance
-    shell: kubectl get pods -n service-governance | grep -c '0/1'
+    shell: kubectl get pods -n service-governance | grep -wc '0/1'
     register: service_governance_result
     until: service_governance_result.stdout == "0"
     retries: 9999
     delay: 5
+    ignore_errors: yes
 
 #安装租户管理平台
 #--------------------------------------------------------------------
@@ -672,6 +673,7 @@
     until: mediacloudbase_result.stdout == "0"
     retries: 9999
     delay: 5
+    ignore_errors: yes
 
 #安装mediacloudrr
 #--------------------------------------------------------------------
