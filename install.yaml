@@ -128,6 +128,8 @@
   - name: 配置k8s源
     tags: prepare,prepare-k8s
     copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
+- hosts: master,node
+  tasks:
   - name: 安装k8s
     tags: prepare,prepare-k8s
     yum: name={{ packages }} state=present
@@ -161,11 +163,16 @@
     - calico-cni:v3.6.1
     - calico-node:v3.6.1
     - calico-kube-controllers:v3.6.1
+- hosts: etcd
+  tasks:
+  - name: 拉取etcd镜像
+    tags: prepare,prepare-images
+    shell: "docker pull {{ google_repo }}/etcd:3.2.24"
+- hosts: node
+  tasks:
   - name: 拉取ingress镜像
     tags: prepare,prepare-images
     shell: "docker pull {{ ali_repo }}/nginx-ingress-controller:0.21.0"
-- hosts: node
-  tasks:
   - name: 安装共享存储
     tags: prepare,prepare-storage
     mount: fstype=nfs path=/k8s src="{{ nfs_server_host }}:/" state=mounted
