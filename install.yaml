@@ -128,6 +128,8 @@
   - name: 配置k8s源
     tags: prepare,prepare-k8s
     copy: src=files/kubernetes.repo dest=/etc/yum.repos.d/
+- hosts: master,node
+  tasks:
   - name: 安装k8s
     tags: prepare,prepare-k8s
     yum: name={{ packages }} state=present
@@ -161,11 +163,16 @@
     - calico-cni:v3.6.1
     - calico-node:v3.6.1
     - calico-kube-controllers:v3.6.1
+- hosts: etcd
+  tasks:
+  - name: 拉取etcd镜像
+    tags: prepare,prepare-images
+    shell: "docker pull {{ google_repo }}/etcd:3.2.24"
+- hosts: node
+  tasks:
   - name: 拉取ingress镜像
     tags: prepare,prepare-images
     shell: "docker pull {{ ali_repo }}/nginx-ingress-controller:0.21.0"
-- hosts: node
-  tasks:
   - name: 安装共享存储
     tags: prepare,prepare-storage
     mount: fstype=nfs path=/k8s src="{{ nfs_server_host }}:/" state=mounted
@@ -604,15 +611,21 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
-  - name: 安装微服务
+  - name: 安装微服务，并等待微服务启动…………
     tags: service-governance
-    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
-            tgzurl=`cat index.yaml | grep charts/service-governance` && \
-            tgzurl=`echo ${tgzurl#*-}` && \
-            helm install $tgzurl \
-            --name=service-governance \
-            --namespace=service-governance \
-            --set dockerRepo.value={{ ali_cust }} --wait"
+    shell: "helm repo update && \
+            helm install stable/service-governance \
+            --name service-governance --namespace service-governance \
+            --set dockerRepo.value={{ ali_cust }}"
+  - shell: sleep 1
+  - name: 等待微服务启动
+    tags: service-governance
+    shell: kubectl get pods -n service-governance | grep -wc '0/1'
+    register: service_governance_result
+    until: service_governance_result.stdout == "0"
+    retries: 9999
+    delay: 5
+    ignore_errors: yes
 
 #安装租户管理平台
 #--------------------------------------------------------------------
@@ -634,34 +647,42 @@
             kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
   - name: 安装租户管理平台
     tags: clouder
-    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
-            tgzurl=`cat index.yaml | grep charts/clouder-` && \
-            tgzurl=`echo ${tgzurl#*-}` && \
-            helm install $tgzurl \
-            --name=clouder --namespace=clouder \
-            --set apiServerIp.value={{ loadbalance_inside_ip }},rootDomain.value={{ root_domain }}"
+    shell: "helm repo update && \
+            helm install stable/clouder \
+            --name=clouder --namespace=clouder --set \
+            dockerRepo.value={{ ali_cust }},\
+            apiServerIp.value={{ loadbalance_inside_ip }},\
+            rootDomain.value={{ root_domain }}"
 
-#安装mediacloudbase与mediacloudrr
+#安装mediacloudbase
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
   - name: 安装mediacloudbase，并等待启动成功……
     tags: mediacloudbase
-    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
-            tgzurl=`cat index.yaml | grep charts/mediacloudbase` && \
-            tgzurl=`echo ${tgzurl#*-}` && \
-            helm install $tgzurl \
+    shell: "helm repo update && \
+            helm install stable/mediacloudbase \
             --name=mediacloudbase \
             --namespace=mediacloudbase \
-            --set dockerRepo.value={{ ali_cust }} --wait"
+            --set dockerRepo.value={{ ali_cust }}"
+  - shell: sleep 1
+  - name: 等待mediacloudbase启动
+    tags: mediacloudbase
+    shell: kubectl get pods -n mediacloudbase | grep '0/1' -wc
+    register: mediacloudbase_result
+    until: mediacloudbase_result.stdout == "0"
+    retries: 9999
+    delay: 5
+    ignore_errors: yes
+
+#安装mediacloudrr
+#--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
   - name: 安装mediacloudrr
     tags: mediacloudrr
-    shell: "wget http://server.appstore.try.fzyun.cn/charts/index.yaml && \
-            tgzurl=`cat index.yaml | grep charts/mediacloudrr` && \
-            tgzurl=`echo ${tgzurl#*-}` && \
-            helm install $tgzurl \
+    shell: "helm repo update && \
+            helm install stable/mediacloudrr \
             --name=mediacloudrr \
             --namespace=mediacloudrr \
             --set dockerRepo.value={{ ali_cust }},rootDomain.value={{ root_domain }}"
