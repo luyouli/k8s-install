@@ -631,20 +631,26 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
-  - name: 获得api_server_token变量
+  - name: 创建secrets需要的变量
     tags: clouder
-    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && echo ${v#*token:}
+    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && v=`echo -n ${v#*token:} | base64` && echo $v | sed -e 's/ //g'
     register: api_server_token
-  - name: 拷贝配置文件
+  - shell: echo -n "{{ mysql_host }}" | base64
+    register: v_mysql_host
+  - shell: echo -n "{{ mysql_root_password }}" | base64
+    register: v_mysql_root_password
+  - shell: echo -n "{{ redis_host }}" | base64
+    register: v_redis_host
+  - shell: echo -n "{{ redis_password }}" | base64
+    register: v_redis_password
+  - name: 拷贝secrets配置文件
     tags: clouder
     template:
-      src: files/clouder-api-server-token.j2
-      dest: ./clouder-api-server-token.yaml
-  - name: 安装clouder的token
+      src: files/clouder-secrets.j2
+      dest: ./clouder-secrets.yaml
+  - name: 安装clouder的secrets
     tags: clouder
-    shell: "rm -rf ./api-server-token &&\ 
-            mv ./clouder-api-server-token.yaml ./api-server-token &&\ 
-            kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
+    shell: kubectl -f ./clouder-secrets.yaml
   - name: 安装租户管理平台
     tags: clouder
     shell: "helm repo update && \
