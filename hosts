@@ -49,6 +49,9 @@ redis_host=192.168.38.58
 # * redis密码
 redis_password=abcd
 
+# * 私有仓库授权信息，就是docker login后 ~/.docker/config.json里内容的base64编码，base64 -w 0  ~/.docker/config.json
+docker_registry='ZXlKaGRYUm9jeUk2ZXlKeVpXZHBjM1J5ZVM1amJpMWlaV2xxYVc1bkxtRnNhWGwxYm1OekxtTnZiU0k2ZXlKaGRYUm9Jam9pWkVkV2VtUkVjREJhV0U0d0luMTlmUW89'
+
 #阿里云镜像仓库前缀（阿里云官方）
 google_repo="registry.cn-hangzhou.aliyuncs.com/google_containers"
 

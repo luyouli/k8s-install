@@ -633,7 +633,7 @@
   tasks:
   - name: 创建secrets需要的变量
     tags: clouder
-    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && v=`echo -n ${v#*token:} | base64` && echo $v | sed -e 's/ //g'
+    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && v=`echo -n ${v#*token:} | base64 -w 0` && echo $v
     register: api_server_token
   - shell: echo -n "{{ mysql_host }}" | base64
     register: v_mysql_host
@@ -643,6 +643,8 @@
     register: v_redis_host
   - shell: echo -n "{{ redis_password }}" | base64
     register: v_redis_password
+  - shell: echo -n "{{ docker_registry }}" | base64 -w 0
+    register: v_docker_registry
   - name: 拷贝secrets配置文件
     tags: clouder
     template:
