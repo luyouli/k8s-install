@@ -674,7 +674,7 @@
       dest: ./clouder-secrets.yaml
   - name: 安装clouder的secrets
     tags: clouder
-    shell: kubectl -f ./clouder-secrets.yaml
+    shell: kubectl apply -f ./clouder-secrets.yaml
   - name: 安装租户管理平台
     tags: clouder
     shell: "helm repo update && \
