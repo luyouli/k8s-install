@@ -626,7 +626,8 @@
     shell: "helm repo update && \
             helm install stable/service-governance \
             --name service-governance --namespace service-governance \
-            --set dockerRepo.value={{ ali_cust }},\
+            --set \
+            dockerRepo.value={{ ali_cust }},\
             dockerRegistrySecret.value={{ docker_registry }}"
   - shell: sleep 1
   - name: 等待微服务启动
@@ -668,10 +669,12 @@
     tags: clouder
     shell: "helm repo update && \
             helm install stable/clouder \
-            --name=clouder --namespace=clouder --set \
+            --name=clouder --namespace=clouder \
+            --set \
             dockerRepo.value={{ ali_cust }},\
             apiServerIp.value={{ loadbalance_inside_ip }},\
-            rootDomain.value={{ root_domain }}"
+            rootDomain.value={{ root_domain }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
 
 #安装mediacloudbase
 #--------------------------------------------------------------------
@@ -683,7 +686,9 @@
             helm install stable/mediacloudbase \
             --name=mediacloudbase \
             --namespace=mediacloudbase \
-            --set dockerRepo.value={{ ali_cust }}"
+            --set \
+            dockerRepo.value={{ ali_cust }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
   - shell: sleep 1
   - name: 等待mediacloudbase启动
     tags: mediacloudbase
@@ -704,4 +709,13 @@
             helm install stable/mediacloudrr \
             --name=mediacloudrr \
             --namespace=mediacloudrr \
-            --set dockerRepo.value={{ ali_cust }},rootDomain.value={{ root_domain }}"
+            --set \
+            rootDomain.value={{ root_domain }},\
+            dockerRepo.value={{ ali_cust }},\
+            mysqlHost.value={{ mysql_host }},\
+            mysqlRootPassword.value={{ mysql_root_password }},\
+            tenantDbUser.value=rr,\
+            tenantDbPassword.value=mediacloudrr,\
+            redisHost.value={{ redis_host }},\
+            redisPassword.value={{ redis_password }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
