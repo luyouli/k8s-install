@@ -183,9 +183,7 @@
   tasks:
   - name: 为ctrl节点安装kubectl
     tags: prepare,ctrl-kubectl
-    copy:
-      src: "/usr/bin/kubectl"
-      dest: /usr/bin/
+    fetch: src="/usr/bin/kubectl" dest="/usr/bin/kubectl" flat=yes
 
 #安装三个etcd
 #-------------------------------------------------------------------
