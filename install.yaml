@@ -529,12 +529,12 @@
   - name: 执行安装rbac
     tags: dashboard
     shell: kubectl apply -f dashboard-rbac.yaml
-  - name: 安装dashboard的ingress证书
-    tags: dashboard
-    shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
-            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./dashboard.{{ root_domain }}.key -out ./dashboard.{{ root_domain }}.crt -subj '/CN=dashboard.{{ root_domain }}' &&\ 
-            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./dashboard.{{ root_domain }}.key --cert ./dashboard.{{ root_domain }}.crt &&\ 
-            cat dashboard.{{ root_domain }}.crt dashboard.{{ root_domain }}.key | tee dashboard.{{ root_domain }}.pem"
+#  - name: 安装dashboard的ingress证书
+#    tags: dashboard
+#    shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
+#            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./dashboard.{{ root_domain }}.key -out ./dashboard.{{ root_domain }}.crt -subj '/CN=dashboard.{{ root_domain }}' &&\ 
+#            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./dashboard.{{ root_domain }}.key --cert ./dashboard.{{ root_domain }}.crt &&\ 
+#            cat dashboard.{{ root_domain }}.crt dashboard.{{ root_domain }}.key | tee dashboard.{{ root_domain }}.pem"
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
