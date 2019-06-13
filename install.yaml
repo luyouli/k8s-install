@@ -186,7 +186,7 @@
     fetch: src="/usr/bin/kubectl" dest="/usr/bin/kubectl" flat=yes
   - name: 修改kubectl权限
     tags: prepare,ctrl-kubectl
-    shell: chmod 755 /usr/bin/kubectl
+    shell: chmod +x /usr/bin/kubectl
 
 #安装三个etcd
 #-------------------------------------------------------------------
