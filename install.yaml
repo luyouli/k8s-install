@@ -657,6 +657,7 @@
     register: v_redis_password
   - shell: echo -n "{{ docker_registry }}" | base64 -w 0
     register: v_docker_registry
+  - debug: msg="api_server_token={{api_server_token.stdout}},v_mysql_host={{v_mysql_host.stdout}},v_mysql_root_password={{v_mysql_root_password.stdout}},v_redis_host={{v_redis_host.stdout}},v_redis_password={{v_redis_password.stdout}},v_docker_registry={{v_docker_registry.stdout}}"
   - name: 拷贝secrets配置文件
     tags: clouder
     template:
