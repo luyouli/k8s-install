@@ -683,6 +683,7 @@
             --set \
             dockerRepo.value={{ ali_cust }},\
             apiServerIp.value={{ loadbalance_inside_ip }},\
+            helmUrl.value=http://server.appstore.try.fzyun.cn/charts,\
             rootDomain.value={{ root_domain }},\
             dockerRegistrySecret.value={{ docker_registry }}"
 
