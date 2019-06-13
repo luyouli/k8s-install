@@ -626,7 +626,8 @@
     shell: "helm repo update && \
             helm install stable/service-governance \
             --name service-governance --namespace service-governance \
-            --set dockerRepo.value={{ ali_cust }}"
+            --set dockerRepo.value={{ ali_cust }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
   - shell: sleep 1
   - name: 等待微服务启动
     tags: service-governance
