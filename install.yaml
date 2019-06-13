@@ -184,6 +184,8 @@
   - name: 为ctrl节点安装kubectl
     tags: prepare,ctrl-kubectl
     fetch: src="/usr/bin/kubectl" dest="/usr/bin/kubectl" flat=yes
+- hosts: ctrl
+  tasks:
   - name: 修改kubectl权限
     tags: prepare,ctrl-kubectl
     file: path=/usr/bin/kubectl mode=0755
