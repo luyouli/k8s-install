@@ -643,19 +643,89 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
-  - name: 创建secrets需要的变量
+  - name: 创建api_server_token变量
     tags: clouder
     shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && v=`echo -n ${v#*token:} | base64 -w 0` && echo $v
     register: api_server_token
-  - shell: echo -n "{{ mysql_host }}" | base64
+  - name: 创建v_mysql_host变量
+    tags: clouder
+    shell: echo -n "{{ mysql_host }}" | base64
     register: v_mysql_host
-  - shell: echo -n "{{ mysql_root_password }}" | base64
+  - name: 创建v_mysql_root_password变量
+    tags: clouder
+    shell: echo -n "{{ mysql_root_password }}" | base64
     register: v_mysql_root_password
-  - shell: echo -n "{{ redis_host }}" | base64
+  - name: 创建v_redis_host变量
+    tags: clouder
+    shell: echo -n "{{ redis_host }}" | base64
     register: v_redis_host
-  - shell: echo -n "{{ redis_password }}" | base64
+  - name: 创建v_redis_password变量
+    tags: clouder
+    shell: echo -n "{{ redis_password }}" | base64
     register: v_redis_password
-  - shell: echo -n "{{ docker_registry }}" | base64 -w 0
+  - name: 创建v_docker_registry变量
+    tags: clouder
+    shell: echo -n "{{ docker_registry }}" | base64 -w 0
     register: v_docker_registry
-  - name: 打印变量
-    debug: msg="api_server_token={{api_server_token.stdout}},v_mysql_host={{v_mysql_host.stdout}},v_mysql_root_password={{v_mysql_root_password.stdout}},v_redis_host={{v_redis_host.stdout}},v_redis_password={{v_redis_password.stdout}},v_docker_registry={{v_docker_registry.stdout}}"
+  - name: 拷贝secrets配置文件
+    tags: clouder
+    template:
+      src: files/clouder-secrets.j2
+      dest: ./clouder-secrets.yaml
+  - name: 安装clouder的secrets
+    tags: clouder
+    shell: kubectl -f ./clouder-secrets.yaml
+  - name: 安装租户管理平台
+    tags: clouder
+    shell: "helm repo update && \
+            helm install stable/clouder \
+            --name=clouder --namespace=clouder \
+            --set \
+            dockerRepo.value={{ ali_cust }},\
+            apiServerIp.value={{ loadbalance_inside_ip }},\
+            rootDomain.value={{ root_domain }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
+
+#安装mediacloudbase
+#--------------------------------------------------------------------
+- hosts: ctrl
+  tasks:
+  - name: 安装mediacloudbase，并等待启动成功……
+    tags: mediacloudbase
+    shell: "helm repo update && \
+            helm install stable/mediacloudbase \
+            --name=mediacloudbase \
+            --namespace=mediacloudbase \
+            --set \
+            dockerRepo.value={{ ali_cust }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
+  - shell: sleep 1
+  - name: 等待mediacloudbase启动
+    tags: mediacloudbase
+    shell: kubectl get pods -n mediacloudbase | grep '0/1' -wc
+    register: mediacloudbase_result
+    until: mediacloudbase_result.stdout == "0"
+    retries: 9999
+    delay: 5
+    ignore_errors: yes
+
+#安装mediacloudrr
+#--------------------------------------------------------------------
+- hosts: ctrl
+  tasks:
+  - name: 安装mediacloudrr
+    tags: mediacloudrr
+    shell: "helm repo update && \
+            helm install stable/mediacloudrr \
+            --name=mediacloudrr \
+            --namespace=mediacloudrr \
+            --set \
+            rootDomain.value={{ root_domain }},\
+            dockerRepo.value={{ ali_cust }},\
+            mysqlHost.value={{ mysql_host }},\
+            mysqlRootPassword.value={{ mysql_root_password }},\
+            tenantDbUser.value=rr,\
+            tenantDbPassword.value=mediacloudrr,\
+            redisHost.value={{ redis_host }},\
+            redisPassword.value={{ redis_password }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
