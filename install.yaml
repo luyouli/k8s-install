@@ -179,6 +179,13 @@
   - name: 配置节点最小剩余内存2G，避免内存跑满
     tags: prepare,prepare-k8s,prepare-k8s-memory
     shell: echo 'KUBELET_EXTRA_ARGS="--eviction-hard=memory.available<2048Mi"' > /etc/sysconfig/kubelet
+- hosts: master[0]
+  tasks:
+  - name: 为ctrl节点安装kubectl
+    tags: prepare,ctrl-kubectl
+    copy:
+      src: "/usr/bin/kubectl"
+      dest: /usr/bin/
 
 #安装三个etcd
 #-------------------------------------------------------------------
