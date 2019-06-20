@@ -5,10 +5,8 @@ etcd:
   local:
     serverCertSANs:
     - "{{ item.host }}"
-    - "{{ item.name }}"
     peerCertSANs:
     - "{{ item.host }}"
-    - "{{ item.name }}"
     extraArgs:
       initial-cluster: "{{ hostvars[groups.etcd[0]]['hostname'] }}=https://{{ groups.etcd[0] }}:2380,{{ hostvars[groups.etcd[1]]['hostname'] }}=https://{{ groups.etcd[1] }}:2380,{{ hostvars[groups.etcd[2]]['hostname'] }}=https://{{ groups.etcd[2] }}:2380"
       initial-cluster-state: new
