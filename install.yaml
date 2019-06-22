@@ -255,7 +255,7 @@
     tags: etcd,etcd-backup
     copy:
       src: /tmp/etcd/
-      dest: /data/backup
+      dest: /data/backup/etcd
 - hosts: etcd
   tasks:
   - name: 删除/etc/kubernetes
