@@ -254,8 +254,8 @@
   - name: 备份证书
     tags: etcd,etcd-backup
     copy:
-      src: /tmp/etcd/etcd0/
-      dest: /data/backup/etcd
+      src: /tmp/etcd/
+      dest: /data/backup
 - hosts: etcd
   tasks:
   - name: 删除/etc/kubernetes
