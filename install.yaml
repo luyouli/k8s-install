@@ -179,6 +179,16 @@
   - name: 配置节点最小剩余内存2G，避免内存跑满
     tags: prepare,prepare-k8s,prepare-k8s-memory
     shell: echo 'KUBELET_EXTRA_ARGS="--eviction-hard=memory.available<2048Mi"' > /etc/sysconfig/kubelet
+- hosts: master[0]
+  tasks:
+  - name: 为ctrl节点安装kubectl
+    tags: prepare,ctrl-kubectl
+    fetch: src="/usr/bin/kubectl" dest="/usr/bin/kubectl" flat=yes
+- hosts: ctrl
+  tasks:
+  - name: 修改kubectl权限
+    tags: prepare,ctrl-kubectl
+    file: path=/usr/bin/kubectl mode=0755
 
 #安装三个etcd
 #-------------------------------------------------------------------
@@ -244,7 +254,7 @@
   - name: 备份证书
     tags: etcd,etcd-backup
     copy:
-      src: /tmp/etcd/etcd0/
+      src: /tmp/etcd/
       dest: /data/backup/etcd
 - hosts: etcd
   tasks:
@@ -286,9 +296,9 @@
             --listen-client-urls=https://0.0.0.0:2379 \
             --listen-peer-urls=https://0.0.0.0:2380 \
             --name={{ hostname }} \
-            --cert-file=/etc/kubernetes/pki/etcd/server.crt \
             --client-cert-auth=true \
             --data-dir=/var/lib/etcd \
+            --cert-file=/etc/kubernetes/pki/etcd/server.crt \
             --key-file=/etc/kubernetes/pki/etcd/server.key \
             --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt \
             --peer-client-cert-auth=true \
@@ -529,12 +539,12 @@
   - name: 执行安装rbac
     tags: dashboard
     shell: kubectl apply -f dashboard-rbac.yaml
-  - name: 安装dashboard的ingress证书
-    tags: dashboard
-    shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
-            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./dashboard.{{ root_domain }}.key -out ./dashboard.{{ root_domain }}.crt -subj '/CN=dashboard.{{ root_domain }}' &&\ 
-            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./dashboard.{{ root_domain }}.key --cert ./dashboard.{{ root_domain }}.crt &&\ 
-            cat dashboard.{{ root_domain }}.crt dashboard.{{ root_domain }}.key | tee dashboard.{{ root_domain }}.pem"
+#  - name: 安装dashboard的ingress证书
+#    tags: dashboard
+#    shell: "rm -rf ./tls.key && rm -rf ./tls.crt &&\ 
+#            openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./dashboard.{{ root_domain }}.key -out ./dashboard.{{ root_domain }}.crt -subj '/CN=dashboard.{{ root_domain }}' &&\ 
+#            kubectl -n kube-system create secret tls k8s-dashboard-secret --key ./dashboard.{{ root_domain }}.key --cert ./dashboard.{{ root_domain }}.crt &&\ 
+#            cat dashboard.{{ root_domain }}.crt dashboard.{{ root_domain }}.key | tee dashboard.{{ root_domain }}.pem"
   - name: 执行安装dashboard-ingress.yaml
     tags: dashboard
     shell: kubectl apply -f dashboard-ingress.yaml
@@ -616,7 +626,9 @@
     shell: "helm repo update && \
             helm install stable/service-governance \
             --name service-governance --namespace service-governance \
-            --set dockerRepo.value={{ ali_cust }}"
+            --set \
+            dockerRepo.value={{ ali_cust }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
   - shell: sleep 1
   - name: 等待微服务启动
     tags: service-governance
@@ -631,28 +643,49 @@
 #--------------------------------------------------------------------
 - hosts: ctrl
   tasks:
-  - name: 获得api_server_token变量
+  - name: 创建api_server_token变量
     tags: clouder
-    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && echo ${v#*token:}
+    shell: v=`kubectl describe secret admin-user-token -n kube-system | grep token:` && v=`echo -n ${v#*token:} | base64 -w 0` && echo $v
     register: api_server_token
-  - name: 拷贝配置文件
+  - name: 创建v_mysql_host变量
+    tags: clouder
+    shell: echo -n "{{ mysql_host }}" | base64
+    register: v_mysql_host
+  - name: 创建v_mysql_root_password变量
+    tags: clouder
+    shell: echo -n "{{ mysql_root_password }}" | base64
+    register: v_mysql_root_password
+  - name: 创建v_redis_host变量
+    tags: clouder
+    shell: echo -n "{{ redis_host }}" | base64
+    register: v_redis_host
+  - name: 创建v_redis_password变量
+    tags: clouder
+    shell: echo -n "{{ redis_password }}" | base64
+    register: v_redis_password
+  - name: 创建v_docker_registry变量
+    tags: clouder
+    shell: echo -n "{{ docker_registry }}" | base64 -w 0
+    register: v_docker_registry
+  - name: 拷贝secrets配置文件
     tags: clouder
     template:
-      src: files/clouder-api-server-token.j2
-      dest: ./clouder-api-server-token.yaml
-  - name: 安装clouder的token
+      src: files/clouder-secrets.j2
+      dest: ./clouder-secrets.yaml
+  - name: 安装clouder的secrets
     tags: clouder
-    shell: "rm -rf ./api-server-token &&\ 
-            mv ./clouder-api-server-token.yaml ./api-server-token &&\ 
-            kubectl create secret generic api-server-token --from-file=./api-server-token -n clouder"
+    shell: kubectl apply -f ./clouder-secrets.yaml
   - name: 安装租户管理平台
     tags: clouder
     shell: "helm repo update && \
             helm install stable/clouder \
-            --name=clouder --namespace=clouder --set \
+            --name=clouder --namespace=clouder \
+            --set \
             dockerRepo.value={{ ali_cust }},\
             apiServerIp.value={{ loadbalance_inside_ip }},\
-            rootDomain.value={{ root_domain }}"
+            helmUrl.value=http://server.appstore.try.fzyun.cn/charts,\
+            rootDomain.value={{ root_domain }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
 
 #安装mediacloudbase
 #--------------------------------------------------------------------
@@ -664,7 +697,9 @@
             helm install stable/mediacloudbase \
             --name=mediacloudbase \
             --namespace=mediacloudbase \
-            --set dockerRepo.value={{ ali_cust }}"
+            --set \
+            dockerRepo.value={{ ali_cust }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
   - shell: sleep 1
   - name: 等待mediacloudbase启动
     tags: mediacloudbase
@@ -685,4 +720,13 @@
             helm install stable/mediacloudrr \
             --name=mediacloudrr \
             --namespace=mediacloudrr \
-            --set dockerRepo.value={{ ali_cust }},rootDomain.value={{ root_domain }}"
+            --set \
+            rootDomain.value={{ root_domain }},\
+            dockerRepo.value={{ ali_cust }},\
+            mysqlHost.value={{ mysql_host }},\
+            mysqlRootPassword.value={{ mysql_root_password }},\
+            tenantDbUser.value=rr,\
+            tenantDbPassword.value=mediacloudrr,\
+            redisHost.value={{ redis_host }},\
+            redisPassword.value={{ redis_password }},\
+            dockerRegistrySecret.value={{ docker_registry }}"
