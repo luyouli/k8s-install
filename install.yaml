@@ -329,7 +329,7 @@
   - name: 拷贝etcd证书
     tags: master,master-copy-etcd
     copy:
-      src: "/data/backup/etcd/{{ item }}"
+      src: "/data/backup/etcd/etcd0/{{ item }}"
       dest: "/etc/kubernetes/{{ item }}"
     with_items:
     - pki/etcd/ca.crt
