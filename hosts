@@ -34,8 +34,8 @@ loadbalance_inside_ip="192.168.0.24"
 # * 负载均衡公网IP，如果没有写负载均衡内网IP
 loadbalance_external_ip="47.92.130.28"
 
-# * nfs存储地址
-nfs_server_host=10.0.0.55
+# * nfs存储地址，注意结尾带具体目录
+nfs_server_host=10.0.0.55:/
 
 # * mysql地址
 mysql_host=192.168.38.58
@@ -47,17 +47,17 @@ mysql_root_password=root
 redis_host=192.168.38.58
 
 # * redis密码
-redis_password=abcd
+redis_password=1234
 
 # * 私有仓库授权信息，就是docker login后 ~/.docker/config.json里内容的base64编码，base64 -w 0  ~/.docker/config.json
-docker_registry='ZXlKaGRYUm9jeUk2ZXlKeVpXZHBjM1J5ZVM1amJpMWlaV2xxYVc1bkxtRnNhWGwxYm1OekxtTnZiU0k2ZXlKaGRYUm9Jam9pWkVkV2VtUkVjREJhV0U0d0luMTlmUW89'
+docker_registry='ZXlKaGRYUm9jeUk2ZXlKMFpYTjBMbU52YlNJNmV5SmhkWFJvSWpvaVpFZFdlbVJFY0RCYVdFNHdJbjE5ZlE9PQ=='
 
 #阿里云镜像仓库前缀（阿里云官方）
 google_repo="registry.cn-hangzhou.aliyuncs.com/google_containers"
 
 #阿里云镜像仓库前缀（私有，官方上没有的镜像会推到这里）
 ali_repo="registry.cn-beijing.aliyuncs.com/common-registry"
-ali_cust="registry.cn-beijing.aliyuncs.com/gansu"
+ali_cust="registry.cn-beijing.aliyuncs.com/clouder"
 
 #存储挂载的本地路径
 nfs_server_path=/k8s
