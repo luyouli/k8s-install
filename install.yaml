@@ -68,10 +68,15 @@
       - yum-utils
       - device-mapper-persistent-data
       - lvm2
+  - name: 检查防火墙服务
+    tags: prepare,prepare-env
+    shell: "if systemctl list-unit-files | grep firewalld > /dev/null; then echo true; else echo false; fi;"
+    register: firewalld_exists
   - name: 关闭防火墙
     tags: prepare,prepare-env
     shell: "systemctl stop firewalld.service || true &&\ 
            systemctl disable firewalld.service || true "
+    when: firewalld_exists
   - name: 禁用selinux
     tags: prepare,prepare-env
     shell: "setenforce 0 || true &&\ 
