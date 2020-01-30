@@ -53,7 +53,7 @@ redis_password=1234
 docker_registry='ZXlKaGRYUm9jeUk2ZXlKMFpYTjBMbU52YlNJNmV5SmhkWFJvSWpvaVpFZFdlbVJFY0RCYVdFNHdJbjE5ZlE9PQ=='
 
 #阿里云镜像仓库前缀（阿里云官方）
-google_repo="registry.cn-hangzhou.aliyuncs.com/google_containers"
+google_repo="registry.aliyuncs.com/google_containers"
 
 #阿里云镜像仓库前缀（私有，官方上没有的镜像会推到这里）
 ali_repo="registry.cn-beijing.aliyuncs.com/common-registry"
